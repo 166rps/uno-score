@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO得点記録 | スコアトラッカー</title>
+    <meta name="description" content="UNOゲームの得点を記録・管理するアプリ。グラフ表示や年間記録に対応。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">🎴 UNO得点記録</h1>
+                <div class="year-selector">
+                    <button id="prevYear" class="year-btn">◀</button>
+                    <span id="currentYear" class="current-year">2025</span>
+                    <button id="nextYear" class="year-btn">▶</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- タブナビゲーション -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="input">📝 得点入力</button>
+            <button class="tab-btn" data-tab="records">📊 記録一覧</button>
+            <button class="tab-btn" data-tab="stats">📈 統計</button>
+            <button class="tab-btn" data-tab="settings">⚙️ 設定</button>
+        </nav>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- 得点入力タブ -->
+            <section id="input-tab" class="tab-content active">
+                <div class="card input-card">
+                    <div class="card-header">
+                        <h2>🎯 新しいゲームを記録</h2>
+                        <div class="game-options">
+                            <div class="game-date">
+                                <label for="gameDate">日付:</label>
+                                <input type="date" id="gameDate">
+                            </div>
+                            <div class="game-type">
+                                <label for="gameType">種類:</label>
+                                <select id="gameType">
+                                    <option value="パねぇ！">パねぇ！</option>
+                                    <option value="パーチー">パーチー</option>
+                                    <option value="普通">普通</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="score-input-grid" id="scoreInputGrid">
+                        <!-- プレイヤー入力フィールドがJSで生成される -->
+                    </div>
+                    <div class="open-game-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="openGameMode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">🎉 オープンゲーム（統計に換算しない）</span>
+                    </div>
+                    <div class="input-actions">
+                        <button id="clearInputs" class="btn btn-secondary">🔄 クリア</button>
+                        <button id="saveGame" class="btn btn-primary">💾 記録する</button>
+                    </div>
+                </div>
+
+                <!-- 直近のゲーム結果 -->
+                <div class="card recent-card">
+                    <h2>📋 直近のゲーム結果</h2>
+                    <div class="recent-games" id="recentGames">
+                        <!-- 直近5ゲームが表示される -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 記録一覧タブ -->
+            <section id="records-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 ゲーム記録一覧</h2>
+                        <div class="record-controls">
+                            <span id="gameCount" class="game-count">0ゲーム</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="score-table" id="scoreTable">
+                            <thead>
+                                <tr id="tableHeader">
+                                    <!-- ヘッダーがJSで生成される -->
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- データがJSで生成される -->
+                            </tbody>
+                            <tfoot id="tableFoot">
+                                <!-- 合計行がJSで生成される -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 直近日のランキング -->
+                <div class="card ranking-card">
+                    <h2>📅 直近日の順位</h2>
+                    <div class="ranking-grid" id="dailyRankingGrid">
+                        <!-- 直近日ランキングがJSで生成される -->
+                    </div>
+                </div>
+
+                <!-- 年間ランキング -->
+                <div class="card ranking-card">
+                    <h2>🏆 年間順位</h2>
+                    <div class="ranking-grid" id="yearlyRankingGrid">
+                        <!-- 年間ランキングがJSで生成される -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 統計タブ -->
+            <section id="stats-tab" class="tab-content">
+                <div class="stats-grid">
+                    <div class="card">
+                        <h2>📈 累計得点推移</h2>
+                        <div class="chart-container">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2>🏆 勝敗数</h2>
+                        <div class="chart-container">
+                            <canvas id="winLossChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2>📊 平均スコア</h2>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 統計サマリー -->
+                <div class="card">
+                    <h2>📋 年間サマリー</h2>
+                    <div class="summary-grid" id="summaryGrid">
+                        <!-- サマリーがJSで生成される -->
+                    </div>
+                </div>
+
+                <!-- UNO基金 -->
+                <div class="card uno-fund-card">
+                    <h2>💰 UNO基金</h2>
+                    <div class="fund-container">
+                        <div class="fund-input-group">
+                            <label for="fundAmount">現在の残高</label>
+                            <div class="fund-input-wrapper">
+                                <span class="fund-currency">¥</span>
+                                <input type="number" id="fundAmount" placeholder="0" min="0" inputmode="numeric">
+                            </div>
+                        </div>
+                        <button id="saveFund" class="btn btn-primary">💾 保存</button>
+                    </div>
+                    <div class="fund-history" id="fundHistory">
+                        <!-- 基金履歴がJSで生成される -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 設定タブ -->
+            <section id="settings-tab" class="tab-content">
+                <div class="card">
+                    <h2>👥 プレイヤー管理</h2>
+                    <div class="player-list" id="playerList">
+                        <!-- プレイヤーリストがJSで生成される -->
+                    </div>
+                    <div class="add-player">
+                        <input type="text" id="newPlayerName" placeholder="新しいプレイヤー名" maxlength="10">
+                        <button id="addPlayer" class="btn btn-primary">➕ 追加</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>💾 データ管理</h2>
+                    <div class="data-actions">
+                        <button id="exportData" class="btn btn-secondary">📤 JSONエクスポート</button>
+                        <button id="importData" class="btn btn-secondary">📥 JSONインポート</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                    <div class="data-actions" style="margin-top: 0.75rem;">
+                        <button id="importCSV" class="btn btn-primary">📊 CSVインポート（スプレッドシート用）</button>
+                        <input type="file" id="importCSVFile" accept=".csv" style="display: none;">
+                    </div>
+                    <div class="data-actions" style="margin-top: 0.75rem;">
+                        <button id="clearYearData" class="btn btn-danger">🗑️ 今年のデータを削除</button>
+                        <button id="clearDateData" class="btn btn-danger">📅 日付を選んで削除</button>
+                        <button id="clearData" class="btn btn-danger">⚠️ 全データを削除</button>
+                    </div>
+                    <div id="deleteDatePicker" style="display: none; margin-top: 0.75rem;">
+                        <input type="date" id="deleteDate">
+                        <button id="confirmDeleteDate" class="btn btn-danger btn-sm">削除実行</button>
+                        <button id="cancelDeleteDate" class="btn btn-secondary btn-sm">キャンセル</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>ℹ️ 使い方</h2>
+                    <div class="help-content">
+                        <p><strong>UNOルール（得点）:</strong></p>
+                        <ul>
+                            <li>勝者は0点、他のプレイヤーは手札の合計点を記録</li>
+                            <li>数字カード: そのままの数字</li>
+                            <li>役物: 各20点</li>
+                            <li>黒: 各50点</li>
+                        </ul>
+                        <p><strong>🎲 独自ルール（ボーナス）:</strong></p>
+                        <ul>
+                            <li>1と6 → -100</li>
+                            <li>サイコロ → -100</li>
+                            <li>1〜6 → 1位の場合-300、2位以下の場合1位返り咲き</li>
+                            <li>1分以内 → -50</li>
+                            <li>全色同じ → -70</li>
+                            <li>1〜7揃う → -123</li>
+                            <li>全色同じ＋1〜7揃う → -1000</li>
+                            <li>スペカ全部自分 → -100</li>
+                            <li>全部同じ文字 → -500</li>
+                            <li>5連勝(以降-20ずつ) → -100</li>
+                            <li>5連敗(以降-10ずつ) → -50</li>
+                            <li>最初のカードめくり10枚以上 → -50</li>
+                            <li>「同じく！」同時はセーフ</li>
+                        </ul>
+                        <p><strong>色の意味:</strong></p>
+                        <ul>
+                            <li>🟠 オレンジ = 1位（最低得点 = 勝者）</li>
+                            <li>🔵 水色 = ビリ（最高得点 = 敗者）</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <p>UNO得点記録 © 2025</p>
+        </footer>
+    </div>
+
+    <!-- 確認モーダル -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">確認</h3>
+            <p id="modalMessage">本当に実行しますか？</p>
+            <div class="modal-actions">
+                <button id="modalCancel" class="btn btn-secondary">キャンセル</button>
+                <button id="modalConfirm" class="btn btn-danger">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Firebase設定 -->
+    <script src="firebase-config.js"></script>
+
+    <!-- メインスクリプト -->
+    <script src="app.js"></script>
+</body>
+
+</html>
