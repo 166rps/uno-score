@@ -768,7 +768,7 @@ function updateLineChart() {
     });
 
     const colors = [
-        '#00d4ff', '#ff8c00', '#00ff88', '#ff4757', '#a855f7', '#f1c40f'
+        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f'
     ];
 
     state.charts.line = new Chart(ctx, {
@@ -923,7 +923,7 @@ function updateBarChart() {
     });
 
     const colors = [
-        '#00d4ff', '#ff8c00', '#00ff88', '#ff4757', '#a855f7', '#f1c40f'
+        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f'
     ];
 
     state.charts.bar = new Chart(ctx, {
