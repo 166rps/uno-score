@@ -78,18 +78,41 @@
                 <!-- 直近のゲーム結果 -->
                 <div class="card recent-card">
                     <h2>📋 直近のゲーム結果</h2>
-                    <div class="recent-games" id="recentGames">
-                        <!-- 直近5ゲームが表示される -->
+                    <div class="recent-games-container">
+                        <table class="recent-games-table">
+                            <!-- ヘッダーとデータがJSで生成される -->
+                            <thead id="recentGamesHeader"></thead>
+                            <tbody id="recentGamesBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
+
             <!-- 記録一覧タブ -->
             <section id="records-tab" class="tab-content">
+                <!-- 直近日のランキング -->
+                <div class="card">
+                    <h2>📅 直近日の順位</h2>
+                    <div id="dailyRankingGrid">
+                        <!-- 直近日ランキングがJSで生成される -->
+                    </div>
+                </div>
+
+                <!-- 年間ランキング -->
+                <div class="card">
+                    <h2>🏆 年間順位</h2>
+                    <div id="yearlyRankingGrid">
+                        <!-- 年間ランキングがJSで生成される -->
+                    </div>
+                </div>
+
+
                 <div class="card">
                     <div class="card-header">
                         <h2>📊 ゲーム記録一覧</h2>
                         <div class="record-controls">
+                            <button id="sortDateBtn" class="btn btn-secondary btn-sm">📅 日付順 (新しい順)</button>
                             <span id="gameCount" class="game-count">0ゲーム</span>
                         </div>
                     </div>
@@ -109,23 +132,8 @@
                         </table>
                     </div>
                 </div>
-
-                <!-- 直近日のランキング -->
-                <div class="card ranking-card">
-                    <h2>📅 直近日の順位</h2>
-                    <div class="ranking-grid" id="dailyRankingGrid">
-                        <!-- 直近日ランキングがJSで生成される -->
-                    </div>
-                </div>
-
-                <!-- 年間ランキング -->
-                <div class="card ranking-card">
-                    <h2>🏆 年間順位</h2>
-                    <div class="ranking-grid" id="yearlyRankingGrid">
-                        <!-- 年間ランキングがJSで生成される -->
-                    </div>
-                </div>
             </section>
+
 
             <!-- 統計タブ -->
             <section id="stats-tab" class="tab-content">

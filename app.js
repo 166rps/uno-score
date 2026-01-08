@@ -30,7 +30,8 @@ let state = {
     games: [], // { id, date, type, scores: { playerName: score } }
     fund: 0, // UNO基金残高
     lastGameType: 'パねぇ！', // 最後に選択したUNOタイプ
-    rankingOverrides: {}, // 同点時の順位指定 { 'daily_2024-01-01': ['playerA', 'playerB'] }
+    rankingOverrides: {}, // 同点時の順位指定
+    sortDesc: true, // true: 新しい順, false: 古い順
     charts: {
         line: null,
         winLoss: null,
@@ -284,18 +285,35 @@ function initScoreInput() {
 // 直近のゲーム表示
 // =============================================
 function updateRecentGames() {
-    const container = document.getElementById('recentGames');
+    const header = document.getElementById('recentGamesHeader');
+    const body = document.getElementById('recentGamesBody');
+    if (!header || !body) return;
+
     // オープンゲームも含めて全データを取得
-    const yearGames = getGamesForYear(state.currentYear);
-    const recent = yearGames.slice(-5).reverse();
+    const yearGames = state.games.filter(game => {
+        const gameYear = new Date(game.date).getFullYear();
+        return gameYear === state.currentYear;
+    });
+
+    // 日付順（新しい順）にソートして先頭5件
+    const recent = [...yearGames].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
     if (recent.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">まだゲーム記録がありません</p>';
+        body.innerHTML = '<tr><td colspan="100" style="text-align:center; padding: 2rem; color: var(--text-muted);">まだゲーム記録がありません</td></tr>';
+        header.innerHTML = '';
         return;
     }
 
-    container.innerHTML = recent.map(game => {
-        // プレイヤー順にスコアを取得して表示順を統一
+    // ヘッダー生成
+    header.innerHTML = `
+        <tr>
+            <th class="sticky-col">日付</th>
+            ${state.players.map(p => `<th>${p}</th>`).join('')}
+        </tr>
+    `;
+
+    // ボディ生成
+    body.innerHTML = recent.map(game => {
         const scores = state.players.map(p => ({
             name: p,
             score: game.scores[p] || 0
@@ -307,31 +325,28 @@ function updateRecentGames() {
         const isOpen = game.isOpen === true;
         const typeBadge = game.type === 'パねぇ！' ? 'paney' : (game.type === 'パーチー' ? 'party' : 'normal');
 
-        return `
-            <div class="recent-game" style="${isOpen ? 'background-color: rgba(0,0,0,0.02);' : ''}">
-                <div class="recent-game-info" style="flex-direction: column; align-items: flex-start; gap: 0.2rem;">
-                    <div>${formatDate(game.date)}</div>
-                    <span class="type-badge ${typeBadge}" style="font-size: 0.7rem;">${game.type || 'パねぇ！'}</span>
-                    ${isOpen ? '<span style="font-size: 0.7rem; color: var(--text-muted);">🎉 オープン</span>' : ''}
-                </div>
-                <div class="recent-game-scores">
-                    ${scores.map(({ name, score }) => {
-            let className = 'recent-score';
-            // オープンゲームでなければ勝敗色をつける
-            if (!isOpen) {
-                if (score === minScore) className += ' winner';
-                else if (score === maxScore && maxScore !== minScore) className += ' loser';
-            }
+        const cells = state.players.map(player => {
+            const score = game.scores[player] || 0;
+            let className = '';
 
-            return `
-                            <div class="${className}" style="${isOpen ? 'background: transparent; border: 1px solid var(--border-color);' : ''}">
-                                <span class="name" style="${isOpen ? 'color: var(--text-muted);' : ''}">${name}</span>
-                                <span class="score" style="${isOpen ? 'color: var(--text-muted);' : ''}">${score}</span>
-                            </div>
-                        `;
-        }).join('')}
-                </div>
-            </div>
+            if (!isOpen) {
+                if (score === minScore) className = 'cell-winner';
+                else if (score === maxScore && maxScore !== minScore) className = 'cell-loser';
+            }
+            return `<td class="${className}">${score}</td>`;
+        }).join('');
+
+        return `
+            <tr style="${isOpen ? 'background-color: rgba(0,0,0,0.02);' : ''}">
+                <td class="sticky-col">
+                    <div style="font-size: 0.8rem; line-height: 1.2;">
+                        ${formatDate(game.date)}<br>
+                        <span class="type-badge ${typeBadge}" style="font-size: 0.65rem;">${game.type || 'パねぇ！'}</span>
+                        ${isOpen ? '<span style="display:block; font-size: 0.65rem; color: var(--text-muted);">Open</span>' : ''}
+                    </div>
+                </td>
+                ${cells}
+            </tr>
         `;
     }).join('');
 }
@@ -340,12 +355,21 @@ function updateRecentGames() {
 // 記録一覧テーブル
 // =============================================
 function getGamesForYear(year, excludeOpen = false) {
-    return state.games.filter(game => {
+    let filtered = state.games.filter(game => {
         const gameYear = new Date(game.date).getFullYear();
         if (gameYear !== year) return false;
         if (excludeOpen && game.isOpen) return false;
         return true;
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+
+    // ソート（降順または昇順）
+    filtered.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return state.sortDesc ? (dateB - dateA) : (dateA - dateB);
+    });
+
+    return filtered;
 }
 
 // =============================================
@@ -358,6 +382,13 @@ function updateScoreTable() {
     const body = document.getElementById('tableBody');
     const foot = document.getElementById('tableFoot');
     const countDisplay = document.getElementById('gameCount');
+    const sortBtn = document.getElementById('sortDateBtn');
+
+    if (sortBtn) {
+        sortBtn.textContent = state.sortDesc ? '📅 日付順 (新しい順)' : '📅 日付順 (古い順)';
+        // イベントリスナーの多重登録を防ぐため、HTML側でonclickを設定するか、ここで毎回クローンする手法があるが、
+        // 今回はinitDataManagementあたりで一度だけ設定するのが綺麗。しかしここでも表示更新が必要。
+    }
 
     const yearGames = getGamesForYear(state.currentYear);
     const validGames = yearGames.filter(g => !g.isOpen);
@@ -385,6 +416,8 @@ function updateScoreTable() {
         return;
     }
 
+
+
     // 日付ごとにグループ化
     const gamesByDate = {};
     yearGames.forEach(game => {
@@ -397,7 +430,14 @@ function updateScoreTable() {
     // テーブルボディ生成
     let rows = [];
 
-    Object.keys(gamesByDate).sort().forEach(date => {
+    // 日付キーのソート
+    const sortedDates = Object.keys(gamesByDate).sort((a, b) => {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return state.sortDesc ? (dateB - dateA) : (dateA - dateB);
+    });
+
+    sortedDates.forEach(date => {
         const dailyGames = gamesByDate[date];
         let dailyGameNumber = 1; // 日毎にリセット
 
@@ -631,52 +671,56 @@ function updateDailyRanking() {
     const yearGames = getGamesForYear(state.currentYear, true); // オープンゲーム除外
 
     if (yearGames.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1/-1;">データがありません</p>';
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">データがありません</p>';
         return;
     }
 
-    // 直近の日付を取得
-    const lastDate = yearGames[yearGames.length - 1].date;
-    const dailyGames = yearGames.filter(g => g.date === lastDate);
+    // 最新の日付を取得
+    const latestDate = [...new Set(yearGames.map(g => g.date))].sort().pop();
+    const dailyGames = yearGames.filter(g => g.date === latestDate);
 
-    // 直近日の合計を計算
+    // 日別合計を計算
     const totals = {};
     state.players.forEach(player => {
         totals[player] = dailyGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
     });
 
     // ソートしてランキング作成（オーバーライド対応）
-    const overrideKey = `daily_${lastDate}`;
+    const overrideKey = `daily_${latestDate}`;
     const sorted = getSortedRankingWithOverrides(totals, overrideKey);
 
     // 調整ボタン
-    const buttonHtml = `<button onclick="showRankingEditor('daily', '${lastDate}')" style="grid-column: 1/-1; margin-top: 0.5rem; width: 100%;" class="btn btn-secondary btn-sm">⚡ 順位を調整</button>`;
+    const buttonHtml = `<button onclick="showRankingEditor('daily', '${latestDate}')" class="btn btn-secondary btn-sm" style="white-space:nowrap;">⚡ 調整</button>`;
 
+    // 直近のゲーム結果と同じスタイルのテーブル形式
     container.innerHTML = `
-        <div style="grid-column: 1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
-            <p style="color: var(--text-muted); font-size: 0.85rem;">📅 ${formatFullDate(lastDate)}</p>
-        </div>
-        ${sorted.map(([name, score], index) => {
-        let className = 'ranking-item';
-        let position = `${index + 1}位`;
-
-        if (index === 0) {
-            className += ' rank-1';
-            position = '🥇 1位';
-        } else if (index === sorted.length - 1 && sorted.length > 1) {
-            className += ' rank-last';
-            position = `😢 ${index + 1}位`;
-        }
-
-        return `
-                <div class="${className}">
-                    <span class="ranking-position">${position}</span>
-                    <span class="ranking-name">${name}</span>
-                    <span class="ranking-score">${score.toLocaleString()}</span>
-                </div>
-            `;
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">${formatDate(latestDate)}</div>
+        <div class="recent-games-container">
+            <table class="recent-games-table">
+                <thead>
+                    <tr>
+                        ${sorted.map(([name], i) => {
+        let icon = '';
+        if (i === 0) icon = '🥇';
+        else if (i === sorted.length - 1 && sorted.length > 1) icon = '😢';
+        return `<th>${icon}${name}</th>`;
     }).join('')}
-        ${buttonHtml}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        ${sorted.map(([name, score], i) => {
+        let cls = '';
+        if (i === 0) cls = 'cell-winner';
+        else if (i === sorted.length - 1 && sorted.length > 1) cls = 'cell-loser';
+        return `<td class="${cls}">${score.toLocaleString()}</td>`;
+    }).join('')}
+                        <td>${buttonHtml}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     `;
 }
 
@@ -687,7 +731,7 @@ function updateYearlyRanking() {
     const yearGames = getGamesForYear(state.currentYear, true); // オープンゲーム除外
 
     if (yearGames.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1/-1;">データがありません</p>';
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">データがありません</p>';
         return;
     }
 
@@ -702,30 +746,36 @@ function updateYearlyRanking() {
     const sorted = getSortedRankingWithOverrides(totals, overrideKey);
 
     // 調整ボタン
-    const buttonHtml = `<button onclick="showRankingEditor('yearly', '${state.currentYear}')" style="grid-column: 1/-1; margin-top: 0.5rem; width: 100%;" class="btn btn-secondary btn-sm">⚡ 順位を調整</button>`;
+    const buttonHtml = `<button onclick="showRankingEditor('yearly', '${state.currentYear}')" class="btn btn-secondary btn-sm" style="white-space:nowrap;">⚡ 調整</button>`;
 
+    // 直近のゲーム結果と同じスタイルのテーブル形式
     container.innerHTML = `
-        ${sorted.map(([name, score], index) => {
-        let className = 'ranking-item';
-        let position = `${index + 1}位`;
-
-        if (index === 0) {
-            className += ' rank-1';
-            position = '🥇 1位';
-        } else if (index === sorted.length - 1 && sorted.length > 1) {
-            className += ' rank-last';
-            position = `😢 ${index + 1}位`;
-        }
-
-        return `
-            <div class="${className}">
-                <span class="ranking-position">${position}</span>
-                <span class="ranking-name">${name}</span>
-                <span class="ranking-score">${score.toLocaleString()}</span>
-            </div>
-        `;
+        <div class="recent-games-container">
+            <table class="recent-games-table">
+                <thead>
+                    <tr>
+                        ${sorted.map(([name], i) => {
+        let icon = '';
+        if (i === 0) icon = '🥇';
+        else if (i === sorted.length - 1 && sorted.length > 1) icon = '😢';
+        return `<th>${icon}${name}</th>`;
     }).join('')}
-        ${buttonHtml}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        ${sorted.map(([name, score], i) => {
+        let cls = '';
+        if (i === 0) cls = 'cell-winner';
+        else if (i === sorted.length - 1 && sorted.length > 1) cls = 'cell-loser';
+        return `<td class="${cls}">${score.toLocaleString()}</td>`;
+    }).join('')}
+                        <td>${buttonHtml}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     `;
 }
 
@@ -767,8 +817,8 @@ function updateLineChart() {
         });
     });
 
-    const colors = [
-        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f'
+    const baseColors = [
+        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f', '#ff69b4', '#00ff7f', '#4169e1', '#dc143c'
     ];
 
     state.charts.line = new Chart(ctx, {
@@ -778,8 +828,8 @@ function updateLineChart() {
             datasets: state.players.map((player, idx) => ({
                 label: player,
                 data: cumulative[player],
-                borderColor: colors[idx % colors.length],
-                backgroundColor: colors[idx % colors.length] + '20',
+                borderColor: baseColors[idx % baseColors.length],
+                backgroundColor: baseColors[idx % baseColors.length] + '20',
                 tension: 0,
                 fill: false
             }))
@@ -922,8 +972,8 @@ function updateBarChart() {
         avg[p] = parseFloat((totals[p] / yearGames.length).toFixed(2));
     });
 
-    const colors = [
-        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f'
+    const baseColors = [
+        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f', '#ff69b4', '#00ff7f', '#4169e1', '#dc143c'
     ];
 
     state.charts.bar = new Chart(ctx, {
@@ -933,8 +983,8 @@ function updateBarChart() {
             datasets: [{
                 label: '平均得点',
                 data: state.players.map(p => avg[p]),
-                backgroundColor: colors.slice(0, state.players.length).map(c => c + '80'),
-                borderColor: colors.slice(0, state.players.length),
+                backgroundColor: state.players.map((_, i) => baseColors[i % baseColors.length] + '80'),
+                borderColor: state.players.map((_, i) => baseColors[i % baseColors.length]),
                 borderWidth: 2
             }]
         },
@@ -1072,6 +1122,7 @@ function initPlayerManagement() {
         input.value = '';
         renderPlayerList();
         window.dispatchEvent(new Event('playersUpdated'));
+        updateAllDisplays(); // 追加: 画面全体の表示を更新する
         showToast(`${name}を追加しました`);
     });
 
@@ -1475,6 +1526,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initFund();
     initModal();
     initRankingEditor();
+
+    // ソートボタンのイベントリスナー
+    const sortBtn = document.getElementById('sortDateBtn');
+    if (sortBtn) {
+        sortBtn.addEventListener('click', () => {
+            state.sortDesc = !state.sortDesc;
+            updateScoreTable();
+        });
+    }
+
     // updateAllDisplaysはロード完了時に呼ばれるのでここでは不要な場合もあるが、初期表示のために呼んでおく
     updateAllDisplays();
 });

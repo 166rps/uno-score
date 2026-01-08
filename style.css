@@ -1173,3 +1173,107 @@ body {
     color: var(--text-muted);
     margin-left: 0.5rem;
 }
+/* 直近ゲームのテーブル化 */
+.recent-games-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.recent-games-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+}
+
+.recent-games-table th,
+.recent-games-table td {
+    padding: 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.recent-games-table th {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    font-weight: normal;
+    font-size: 0.8rem;
+}
+
+/* 直近ゲームの日付列固定 */
+.recent-games-table .sticky-col {
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    z-index: 10;
+    border-right: 1px solid var(--border-color);
+    text-align: left;
+    min-width: 80px;
+}
+
+.recent-games-table th.sticky-col {
+    background: var(--bg-secondary);
+}
+
+/* コンパクトランキング */
+.ranking-grid.compact {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.5rem;
+}
+
+.ranking-grid.compact .ranking-item {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.ranking-grid.compact .ranking-position {
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+}
+
+.ranking-grid.compact .ranking-score {
+    font-size: 1rem;
+}
+
+/* 記録一覧のコントロール */
+.record-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+
+/* ランキングの横スクロール対応 */
+.ranking-scroll-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.ranking-table th,
+.ranking-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.ranking-table th {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    font-weight: normal;
+    font-size: 0.85rem;
+}
+
+.ranking-table td {
+    background: var(--bg-card);
+}
+
