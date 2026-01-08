@@ -42,10 +42,25 @@ let state = {
 };
 
 // =============================================
-// データ永続化 (localStorage / Realtime Database)
+// 定数
 // =============================================
 const STORAGE_KEY = 'uno_score_data';
 const DB_PATH = 'uno_data_v1/main_data'; // 保存パス
+
+// グラフ用カラーパレット（プレイヤー増加時も対応）
+const CHART_COLORS = [
+    '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f',
+    '#ff69b4', '#00ff7f', '#4169e1', '#dc143c'
+];
+
+// 色を取得（インデックスがオーバーフローしてもループ）
+function getChartColor(index) {
+    return CHART_COLORS[index % CHART_COLORS.length];
+}
+
+// =============================================
+// データ永続化 (localStorage / Realtime Database)
+// =============================================
 
 // データを保存（RTDB優先、無ければLocal）
 async function saveData() {
@@ -380,10 +395,6 @@ function getGamesForYear(year, excludeOpen = false) {
     return filtered;
 }
 
-// =============================================
-// 記録一覧テーブル
-// =============================================
-// getGamesForYearは既に定義済み
 
 function updateScoreTable() {
     const header = document.getElementById('tableHeader');
@@ -909,10 +920,6 @@ function updateLineChart() {
         });
     });
 
-    const baseColors = [
-        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f', '#ff69b4', '#00ff7f', '#4169e1', '#dc143c'
-    ];
-
     state.charts.line = new Chart(ctx, {
         type: 'line',
         data: {
@@ -920,8 +927,8 @@ function updateLineChart() {
             datasets: state.players.map((player, idx) => ({
                 label: player,
                 data: cumulative[player],
-                borderColor: baseColors[idx % baseColors.length],
-                backgroundColor: baseColors[idx % baseColors.length] + '20',
+                borderColor: getChartColor(idx),
+                backgroundColor: getChartColor(idx) + '20',
                 tension: 0,
                 fill: false
             }))
@@ -1064,10 +1071,6 @@ function updateBarChart() {
         avg[p] = parseFloat((totals[p] / yearGames.length).toFixed(2));
     });
 
-    const baseColors = [
-        '#00d4ff', '#e67700', '#00a868', '#ff4757', '#a855f7', '#f1c40f', '#ff69b4', '#00ff7f', '#4169e1', '#dc143c'
-    ];
-
     state.charts.bar = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -1075,8 +1078,8 @@ function updateBarChart() {
             datasets: [{
                 label: '平均得点',
                 data: state.players.map(p => avg[p]),
-                backgroundColor: state.players.map((_, i) => baseColors[i % baseColors.length] + '80'),
-                borderColor: state.players.map((_, i) => baseColors[i % baseColors.length]),
+                backgroundColor: state.players.map((_, i) => getChartColor(i) + '80'),
+                borderColor: state.players.map((_, i) => getChartColor(i)),
                 borderWidth: 2
             }]
         },
