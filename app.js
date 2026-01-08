@@ -31,6 +31,8 @@ let state = {
     fund: 0, // UNO基金残高
     lastGameType: 'パねぇ！', // 最後に選択したUNOタイプ
     rankingOverrides: {}, // 同点時の順位指定
+    dailyWinners: {}, // 日別合計の勝者指定 { '2026-01-01': 'プレイヤー名' }
+    yearlyWinner: {}, // 年間合計の勝者指定 { '2026': 'プレイヤー名' }
     sortDesc: true, // true: 新しい順, false: 古い順
     charts: {
         line: null,
@@ -53,6 +55,8 @@ async function saveData() {
         fund: state.fund,
         lastGameType: state.lastGameType,
         rankingOverrides: state.rankingOverrides,
+        dailyWinners: state.dailyWinners,
+        yearlyWinner: state.yearlyWinner,
         updatedAt: new Date().toISOString()
     };
 
@@ -82,6 +86,8 @@ async function loadData() {
                 state.fund = data.fund || 0;
                 state.lastGameType = data.lastGameType || 'パねぇ！';
                 state.rankingOverrides = data.rankingOverrides || {};
+                state.dailyWinners = data.dailyWinners || {};
+                state.yearlyWinner = data.yearlyWinner || {};
 
 
                 console.log('Synced from RTDB');
@@ -109,6 +115,8 @@ function loadFromLocal() {
         state.fund = data.fund || state.fund;
         state.lastGameType = data.lastGameType || state.lastGameType;
         state.rankingOverrides = data.rankingOverrides || {};
+        state.dailyWinners = data.dailyWinners || {};
+        state.yearlyWinner = data.yearlyWinner || {};
     }
     updateAllDisplays();
 }
@@ -543,13 +551,39 @@ function updateScoreTable() {
             const dailyMin = Math.min(...dailyScores);
             const dailyMax = Math.max(...dailyScores);
 
+            // 0点で同点のプレイヤーをチェック
+            const zeroPlayers = state.players.filter(p => dailyTotals[p] === 0);
+            const hasZeroTie = dailyMin === 0 && zeroPlayers.length > 1;
+            const dailyWinner = state.dailyWinners[date];
+
             const dailyCells = state.players.map(player => {
                 const score = dailyTotals[player];
                 let className = '';
-                if (score === dailyMin) className = 'cell-winner';
-                else if (score === dailyMax && dailyMax !== dailyMin) className = 'cell-loser';
+                let content = score.toString();
+                let onclickAttr = '';
+                let styleAttr = '';
 
-                return `<td class="${className}">${score}</td>`;
+                if (hasZeroTie && score === 0) {
+                    // 0点同点の場合、勝者選択可能に
+                    if (dailyWinner === player) {
+                        className = 'cell-winner';
+                        content = `${score}<br><span style="font-size:0.7rem;">★勝者</span>`;
+                    } else if (dailyWinner) {
+                        // 別の人が勝者に選ばれている場合
+                        className = '';
+                    } else {
+                        // 誰も選ばれていない場合
+                        className = 'cell-winner cell-choice-needed';
+                    }
+                    onclickAttr = `onclick="toggleDailyWinner('${date}', '${player}')"`;
+                    styleAttr = 'cursor: pointer;';
+                } else if (score === dailyMin) {
+                    className = 'cell-winner';
+                } else if (score === dailyMax && dailyMax !== dailyMin) {
+                    className = 'cell-loser';
+                }
+
+                return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
             }).join('');
 
             rows.push(`
@@ -582,13 +616,39 @@ function updateScoreTable() {
     const yearMin = Math.min(...yearScores);
     const yearMax = Math.max(...yearScores);
 
+    // 0点で同点のプレイヤーをチェック
+    const yearZeroPlayers = state.players.filter(p => yearTotals[p] === 0);
+    const hasYearZeroTie = yearMin === 0 && yearZeroPlayers.length > 1;
+    const yearlyWinner = state.yearlyWinner[state.currentYear];
+
     const yearCells = state.players.map(player => {
         const score = yearTotals[player];
         let className = '';
-        if (score === yearMin) className = 'cell-winner';
-        else if (score === yearMax && yearMax !== yearMin) className = 'cell-loser';
+        let content = score.toLocaleString();
+        let onclickAttr = '';
+        let styleAttr = '';
 
-        return `<td class="${className}">${score.toLocaleString()}</td>`;
+        if (hasYearZeroTie && score === 0) {
+            // 0点同点の場合、勝者選択可能に
+            if (yearlyWinner === player) {
+                className = 'cell-winner';
+                content = `${score.toLocaleString()}<br><span style="font-size:0.7rem;">★勝者</span>`;
+            } else if (yearlyWinner) {
+                // 別の人が勝者に選ばれている場合
+                className = '';
+            } else {
+                // 誰も選ばれていない場合
+                className = 'cell-winner cell-choice-needed';
+            }
+            onclickAttr = `onclick="toggleYearlyWinner('${state.currentYear}', '${player}')"`;
+            styleAttr = 'cursor: pointer;';
+        } else if (score === yearMin) {
+            className = 'cell-winner';
+        } else if (score === yearMax && yearMax !== yearMin) {
+            className = 'cell-loser';
+        }
+
+        return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
     }).join('');
 
     foot.innerHTML = `
@@ -632,6 +692,38 @@ window.toggleWinner = function (gameId, playerName) {
     state.games[gameIndex] = game;
     saveToStorage();
     updateScoreTable(); // テーブルのみ更新で十分
+};
+
+// 日別合計の勝者を切り替え
+window.toggleDailyWinner = function (date, playerName) {
+    // 既にこの人が勝者の場合は解除
+    if (state.dailyWinners[date] === playerName) {
+        delete state.dailyWinners[date];
+        showToast('日別勝者指定を解除しました');
+    } else {
+        // 設定
+        state.dailyWinners[date] = playerName;
+        showToast(`${playerName}を日別勝者に指定しました！`);
+    }
+
+    saveToStorage();
+    updateScoreTable();
+};
+
+// 年間合計の勝者を切り替え
+window.toggleYearlyWinner = function (year, playerName) {
+    // 既にこの人が勝者の場合は解除
+    if (state.yearlyWinner[year] === playerName) {
+        delete state.yearlyWinner[year];
+        showToast('年間勝者指定を解除しました');
+    } else {
+        // 設定
+        state.yearlyWinner[year] = playerName;
+        showToast(`${playerName}を年間勝者に指定しました！`);
+    }
+
+    saveToStorage();
+    updateScoreTable();
 };
 
 // =============================================
