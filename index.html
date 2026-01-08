@@ -267,6 +267,23 @@
         </div>
     </div>
 
+    <!-- 順位調整モーダル -->
+    <div id="rankingEditorModal" class="modal">
+        <div class="modal-content">
+            <h3>📊 順位の調整</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                同点の場合の順位を決定できます。<br>上下ボタンで入れ替えてください。
+            </p>
+            <div id="rankingEditorList" class="ranking-editor-list">
+                <!-- JSでリスト生成 -->
+            </div>
+            <div class="modal-actions">
+                <button id="rankingEditorCancel" class="btn btn-secondary">キャンセル</button>
+                <button id="rankingEditorSave" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- トースト通知 -->
     <div id="toast" class="toast"></div>
 

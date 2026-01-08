@@ -3,6 +3,7 @@
  * メインJavaScriptファイル
  */
 
+
 // =============================================
 // Firebase初期化 (Realtime Database版)
 // =============================================
@@ -29,6 +30,7 @@ let state = {
     games: [], // { id, date, type, scores: { playerName: score } }
     fund: 0, // UNO基金残高
     lastGameType: 'パねぇ！', // 最後に選択したUNOタイプ
+    rankingOverrides: {}, // 同点時の順位指定 { 'daily_2024-01-01': ['playerA', 'playerB'] }
     charts: {
         line: null,
         winLoss: null,
@@ -49,6 +51,7 @@ async function saveData() {
         games: state.games,
         fund: state.fund,
         lastGameType: state.lastGameType,
+        rankingOverrides: state.rankingOverrides,
         updatedAt: new Date().toISOString()
     };
 
@@ -77,6 +80,8 @@ async function loadData() {
                 state.games = data.games || [];
                 state.fund = data.fund || 0;
                 state.lastGameType = data.lastGameType || 'パねぇ！';
+                state.rankingOverrides = data.rankingOverrides || {};
+
 
                 console.log('Synced from RTDB');
                 updateAllDisplays();
@@ -102,6 +107,7 @@ function loadFromLocal() {
         state.games = data.games || [];
         state.fund = data.fund || state.fund;
         state.lastGameType = data.lastGameType || state.lastGameType;
+        state.rankingOverrides = data.rankingOverrides || {};
     }
     updateAllDisplays();
 }
@@ -289,9 +295,14 @@ function updateRecentGames() {
     }
 
     container.innerHTML = recent.map(game => {
-        const scores = Object.entries(game.scores);
-        const minScore = Math.min(...scores.map(s => s[1]));
-        const maxScore = Math.max(...scores.map(s => s[1]));
+        // プレイヤー順にスコアを取得して表示順を統一
+        const scores = state.players.map(p => ({
+            name: p,
+            score: game.scores[p] || 0
+        }));
+
+        const minScore = Math.min(...scores.map(s => s.score));
+        const maxScore = Math.max(...scores.map(s => s.score));
 
         const isOpen = game.isOpen === true;
         const typeBadge = game.type === 'パねぇ！' ? 'paney' : (game.type === 'パーチー' ? 'party' : 'normal');
@@ -304,7 +315,7 @@ function updateRecentGames() {
                     ${isOpen ? '<span style="font-size: 0.7rem; color: var(--text-muted);">🎉 オープン</span>' : ''}
                 </div>
                 <div class="recent-game-scores">
-                    ${scores.map(([name, score]) => {
+                    ${scores.map(({ name, score }) => {
             let className = 'recent-score';
             // オープンゲームでなければ勝敗色をつける
             if (!isOpen) {
@@ -385,10 +396,10 @@ function updateScoreTable() {
 
     // テーブルボディ生成
     let rows = [];
-    let gameNumber = 1;
 
     Object.keys(gamesByDate).sort().forEach(date => {
         const dailyGames = gamesByDate[date];
+        let dailyGameNumber = 1; // 日毎にリセット
 
         // 日付ヘッダー行
         rows.push(`
@@ -407,21 +418,64 @@ function updateScoreTable() {
             const rowClass = isOpen ? 'open-game-row' : '';
             const typeBadge = game.type === 'パねぇ！' ? 'paney' : (game.type === 'パーチー' ? 'party' : 'normal');
 
+            // 0点が複数人いるかチェック
+            const winners = state.players.filter(p => (game.scores[p] || 0) === 0);
+            const hasMultipleZeroers = winners.length > 1;
+
             const cells = state.players.map(player => {
                 const score = game.scores[player] || 0;
                 let className = '';
-                // オープンゲームでなければ勝敗色をつける
+                let onclickAttr = '';
+                let styleAttr = '';
+
+                // 2. 勝者・敗者の色付けロジック
                 if (!isOpen) {
-                    if (score === minScore) className = 'cell-winner';
-                    else if (score === maxScore && maxScore !== minScore) className = 'cell-loser';
+                    // 0点が複数いる場合の特別処理
+                    if (hasMultipleZeroers && score === 0) {
+                        styleAttr = 'cursor: pointer; position: relative;';
+                        onclickAttr = `onclick="toggleWinner('${game.id}', '${player}')"`;
+
+                        // 真の勝者が指定されている場合
+                        if (game.trueWinner) {
+                            if (game.trueWinner === player) {
+                                className = 'cell-winner';
+                            } else {
+                                // 指定されているが自分じゃない場合はハイライトなし
+                                className = '';
+                            }
+                        } else {
+                            // 指定されていない場合は全員勝者色（クリックを促す）
+                            className = 'cell-winner cell-choice-needed';
+                        }
+
+
+                    }
+                    // 通常時（0点一人、または0点じゃない人）
+                    else {
+                        if (score === minScore) {
+                            // minScoreが0でない場合もありうるが、UNOルール的には0が勝者。
+                            // ここではminScoreの人を勝者扱いする（既存ロジック）
+                            className = 'cell-winner';
+                        }
+                        else if (score === maxScore && maxScore !== minScore) className = 'cell-loser';
+                    }
                 }
 
-                return `<td class="${className}">${score}</td>`;
+                // cell-choice-neededの場合、ツールチップ的なものを出したいが、シンプルに
+                let content = score;
+                if (className.includes('cell-choice-needed')) {
+                    content += '<span style="font-size:0.6rem; display:block; opacity:0.7;">👈選ぶ</span>';
+                }
+                if (game.trueWinner === player) {
+                    content += '<span style="font-size:0.6rem; display:block;">★勝者</span>';
+                }
+
+                return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
             }).join('');
 
             rows.push(`
                 <tr class="${rowClass}" style="${isOpen ? 'background-color: rgba(0,0,0,0.02); color: var(--text-muted);' : ''}">
-                    <td>${gameNumber++}</td>
+                    <td>${dailyGameNumber++}</td>
                     <td style="font-size: 0.85rem;">
                         ${idx + 1}回目
                         <span class="type-badge ${typeBadge}" style="display:block; font-size: 0.7rem; margin-top: 2px;">${game.type || 'パねぇ！'}</span>
@@ -498,6 +552,7 @@ function updateScoreTable() {
     }).join('');
 
     foot.innerHTML = `
+        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
         <tr>
             <td colspan="2">🏆 年間合計</td>
             ${yearCells}
@@ -516,6 +571,29 @@ window.deleteGame = function (gameId) {
     });
 };
 
+// 真の勝者を切り替え
+window.toggleWinner = function (gameId, playerName) {
+    const gameIndex = state.games.findIndex(g => g.id === gameId);
+    if (gameIndex === -1) return;
+
+    const game = state.games[gameIndex];
+
+    // 既にこの人が真の勝者の場合は解除
+    if (game.trueWinner === playerName) {
+        delete game.trueWinner;
+        showToast('勝者指定を解除しました（全員ハイライトします）');
+    } else {
+        // 設定
+        game.trueWinner = playerName;
+        showToast(`${playerName}を勝者に指定しました！`);
+    }
+
+    // 保存して更新
+    state.games[gameIndex] = game;
+    saveToStorage();
+    updateScoreTable(); // テーブルのみ更新で十分
+};
+
 // =============================================
 // ランキング表示
 // =============================================
@@ -524,6 +602,27 @@ function updateRanking() {
     updateYearlyRanking();
 }
 
+
+// 同点対応のソート関数
+function getSortedRankingWithOverrides(totals, overrideKey) {
+    return Object.entries(totals).sort((a, b) => {
+        // まずスコアで比較（昇順）
+        if (a[1] !== b[1]) return a[1] - b[1];
+
+        // スコアが同じ場合、Override設定を確認
+        const overrides = state.rankingOverrides[overrideKey] || [];
+        const idxA = overrides.indexOf(a[0]);
+        const idxB = overrides.indexOf(b[0]);
+
+        // 両方ともOverride設定にある場合、その順序に従う
+        if (idxA !== -1 && idxB !== -1) {
+            return idxA - idxB;
+        }
+
+        // 設定がない場合は名前順などで安定させる（あるいはそのまま）
+        return 0;
+    });
+}
 
 function updateDailyRanking() {
     const container = document.getElementById('dailyRankingGrid');
@@ -546,11 +645,17 @@ function updateDailyRanking() {
         totals[player] = dailyGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
     });
 
-    // ソートしてランキング作成
-    const sorted = Object.entries(totals).sort((a, b) => a[1] - b[1]);
+    // ソートしてランキング作成（オーバーライド対応）
+    const overrideKey = `daily_${lastDate}`;
+    const sorted = getSortedRankingWithOverrides(totals, overrideKey);
+
+    // 調整ボタン
+    const buttonHtml = `<button onclick="showRankingEditor('daily', '${lastDate}')" style="grid-column: 1/-1; margin-top: 0.5rem; width: 100%;" class="btn btn-secondary btn-sm">⚡ 順位を調整</button>`;
 
     container.innerHTML = `
-        <p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; margin-bottom: 0.5rem;">📅 ${formatFullDate(lastDate)}</p>
+        <div style="grid-column: 1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+            <p style="color: var(--text-muted); font-size: 0.85rem;">📅 ${formatFullDate(lastDate)}</p>
+        </div>
         ${sorted.map(([name, score], index) => {
         let className = 'ranking-item';
         let position = `${index + 1}位`;
@@ -571,6 +676,7 @@ function updateDailyRanking() {
                 </div>
             `;
     }).join('')}
+        ${buttonHtml}
     `;
 }
 
@@ -591,10 +697,15 @@ function updateYearlyRanking() {
         totals[player] = yearGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
     });
 
-    // ソートしてランキング作成
-    const sorted = Object.entries(totals).sort((a, b) => a[1] - b[1]);
+    // ソートしてランキング作成（オーバーライド対応）
+    const overrideKey = `yearly_${state.currentYear}`;
+    const sorted = getSortedRankingWithOverrides(totals, overrideKey);
 
-    container.innerHTML = sorted.map(([name, score], index) => {
+    // 調整ボタン
+    const buttonHtml = `<button onclick="showRankingEditor('yearly', '${state.currentYear}')" style="grid-column: 1/-1; margin-top: 0.5rem; width: 100%;" class="btn btn-secondary btn-sm">⚡ 順位を調整</button>`;
+
+    container.innerHTML = `
+        ${sorted.map(([name, score], index) => {
         let className = 'ranking-item';
         let position = `${index + 1}位`;
 
@@ -613,7 +724,9 @@ function updateYearlyRanking() {
                 <span class="ranking-score">${score.toLocaleString()}</span>
             </div>
         `;
-    }).join('');
+    }).join('')}
+        ${buttonHtml}
+    `;
 }
 
 // =============================================
@@ -1361,6 +1474,107 @@ document.addEventListener('DOMContentLoaded', () => {
     initDataManagement();
     initFund();
     initModal();
+    initRankingEditor();
     // updateAllDisplaysはロード完了時に呼ばれるのでここでは不要な場合もあるが、初期表示のために呼んでおく
     updateAllDisplays();
 });
+
+
+// =============================================
+// ランキング順位編集
+// =============================================
+let currentEditKey = null;
+let currentEditData = []; // [{name, score}, ...]
+
+function initRankingEditor() {
+    const modal = document.getElementById('rankingEditorModal');
+    const saveBtn = document.getElementById('rankingEditorSave');
+    const cancelBtn = document.getElementById('rankingEditorCancel');
+
+    saveBtn.addEventListener('click', () => {
+        if (!currentEditKey) return;
+
+        // 現在の順序を保存
+        const order = currentEditData.map(d => d.name);
+        state.rankingOverrides[currentEditKey] = order;
+
+        saveToStorage();
+        updateAllDisplays();
+        modal.classList.remove('active');
+        showToast('順位を保存しました');
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+}
+
+window.showRankingEditor = function (type, keyVal) {
+    const modal = document.getElementById('rankingEditorModal');
+    const listContainer = document.getElementById('rankingEditorList');
+
+    // データ準備
+    let overrideKey = '';
+    let totals = {};
+    const yearGames = getGamesForYear(state.currentYear, true);
+
+    if (type === 'daily') {
+        overrideKey = `daily_${keyVal}`;
+        const dailyGames = yearGames.filter(g => g.date === keyVal);
+        state.players.forEach(player => {
+            totals[player] = dailyGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
+        });
+    } else {
+        overrideKey = `yearly_${keyVal}`;
+        state.players.forEach(player => {
+            totals[player] = yearGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
+        });
+    }
+
+    currentEditKey = overrideKey;
+
+    // 現在のソート順（オーバーライド適用）を取得
+    const sortedEntries = getSortedRankingWithOverrides(totals, overrideKey);
+    currentEditData = sortedEntries.map(([name, score]) => ({ name, score }));
+
+    renderRankingEditorList();
+    modal.classList.add('active');
+};
+
+function renderRankingEditorList() {
+    const listContainer = document.getElementById('rankingEditorList');
+
+    listContainer.innerHTML = currentEditData.map((item, index) => {
+        // 前後と比較して同点かどうかチェック
+        const isTiePrev = index > 0 && currentEditData[index - 1].score === item.score;
+        const isTieNext = index < currentEditData.length - 1 && currentEditData[index + 1].score === item.score;
+        const isTie = isTiePrev || isTieNext;
+
+        return `
+            <div class="ranking-editor-item ${isTie ? 'is-tie' : ''}">
+                <div style="display:flex; align-items:center;">
+                    <span style="font-weight:700; width: 1.5rem;">${index + 1}</span>
+                    <span>${item.name}</span>
+                    <span class="ranking-score-info">${item.score}点</span>
+                    ${isTie ? '<span style="font-size:0.75rem; color:var(--accent-orange); margin-left:0.5rem;">●同点</span>' : ''}
+                </div>
+                <div class="ranking-actions">
+                    <button class="ranking-sort-btn" onclick="moveRankingItem(${index}, -1)" ${index === 0 ? 'disabled' : ''}>▲</button>
+                    <button class="ranking-sort-btn" onclick="moveRankingItem(${index}, 1)" ${index === currentEditData.length - 1 ? 'disabled' : ''}>▼</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.moveRankingItem = function (index, direction) {
+    if (index + direction < 0 || index + direction >= currentEditData.length) return;
+
+    // 入れ替え
+    const temp = currentEditData[index];
+    currentEditData[index] = currentEditData[index + direction];
+    currentEditData[index + direction] = temp;
+
+    renderRankingEditorList();
+};
+
