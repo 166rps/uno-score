@@ -253,6 +253,9 @@ function initScoreInput() {
     // クリアボタン
     clearBtn.addEventListener('click', () => {
         grid.querySelectorAll('input').forEach(inp => inp.value = '');
+        // 時間入力もクリア
+        document.getElementById('gameMinutes').value = '';
+        document.getElementById('gameSeconds').value = '';
     });
 
     // 保存ボタン
@@ -278,12 +281,17 @@ function initScoreInput() {
         // 選択したタイプを保存
         state.lastGameType = typeSelect.value;
 
+        // 経過時間を取得
+        const minutes = parseInt(document.getElementById('gameMinutes').value) || 0;
+        const seconds = parseInt(document.getElementById('gameSeconds').value) || 0;
+
         const game = {
             id: generateId(),
             date: dateInput.value,
             type: typeSelect.value,
             isOpen: openGameCheckbox.checked, // オープンゲームフラグ
-            scores: scores
+            scores: scores,
+            duration: (minutes > 0 || seconds > 0) ? { minutes, seconds } : null
         };
 
         state.games.push(game);
@@ -291,6 +299,13 @@ function initScoreInput() {
 
         // 入力をクリア
         grid.querySelectorAll('input').forEach(inp => inp.value = '');
+        // 時間入力もクリア
+        document.getElementById('gameMinutes').value = '';
+        document.getElementById('gameSeconds').value = '';
+        // ストップウォッチをリセット
+        if (typeof resetStopwatch === 'function') {
+            resetStopwatch();
+        }
 
         if (openGameCheckbox.checked) {
             showToast('オープンゲームを記録しました！（統計には換算されません）');
@@ -318,8 +333,15 @@ function updateRecentGames() {
         return gameYear === state.currentYear;
     });
 
-    // 日付順（新しい順）にソートして先頭5件
-    const recent = [...yearGames].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+    // 追加順（新しい順）にソートして先頭5件
+    // IDはタイムスタンプベースなので、ID降順で最新が先になる
+    const recent = [...yearGames].sort((a, b) => {
+        // IDを数値に変換して比較（降順）
+        const idA = parseInt(a.id.split('')[0], 36);
+        const idB = parseInt(b.id.split('')[0], 36);
+        // より長いIDを持つ方が新しい（Date.now()ベース）
+        return b.id.localeCompare(a.id);
+    }).slice(0, 5);
 
     if (recent.length === 0) {
         body.innerHTML = '<tr><td colspan="100" style="text-align:center; padding: 2rem; color: var(--text-muted);">まだゲーム記録がありません</td></tr>';
@@ -331,6 +353,7 @@ function updateRecentGames() {
     header.innerHTML = `
         <tr>
             <th class="sticky-col">日付</th>
+            <th style="width: 50px;">⏱️</th>
             ${state.players.map(p => `<th>${p}</th>`).join('')}
         </tr>
     `;
@@ -359,6 +382,11 @@ function updateRecentGames() {
             return `<td class="${className}">${score}</td>`;
         }).join('');
 
+        // 経過時間の表示
+        const durationDisplay = game.duration
+            ? `${game.duration.minutes}:${game.duration.seconds.toString().padStart(2, '0')}`
+            : '-';
+
         return `
             <tr style="${isOpen ? 'background-color: rgba(0,0,0,0.02);' : ''}">
                 <td class="sticky-col">
@@ -368,6 +396,7 @@ function updateRecentGames() {
                         ${isOpen ? '<span style="display:block; font-size: 0.65rem; color: var(--text-muted);">Open</span>' : ''}
                     </div>
                 </td>
+                <td class="time-cell">${durationDisplay}</td>
                 ${cells}
             </tr>
         `;
@@ -419,6 +448,7 @@ function updateScoreTable() {
     header.innerHTML = `
         <th>#</th>
         <th>日付</th>
+        <th style="width: 50px;">⏱️</th>
         ${state.players.map(p => `<th>${p}</th>`).join('')}
         <th>操作</th>
     `;
@@ -426,7 +456,7 @@ function updateScoreTable() {
     if (yearGames.length === 0) {
         body.innerHTML = `
             <tr>
-                <td colspan="${state.players.length + 3}" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                <td colspan="${state.players.length + 4}" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                     ${state.currentYear}年のゲーム記録がありません
                 </td>
             </tr>
@@ -463,7 +493,7 @@ function updateScoreTable() {
         // 日付ヘッダー行
         rows.push(`
             <tr class="date-header-row">
-                <td colspan="${state.players.length + 3}">📅 ${formatFullDate(date)}</td>
+                <td colspan="${state.players.length + 4}">📅 ${formatFullDate(date)}</td>
             </tr>
         `);
 
@@ -532,6 +562,11 @@ function updateScoreTable() {
                 return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
             }).join('');
 
+            // 経過時間の表示
+            const durationDisplay = game.duration
+                ? `${game.duration.minutes}:${game.duration.seconds.toString().padStart(2, '0')}`
+                : '-';
+
             rows.push(`
                 <tr class="${rowClass}" style="${isOpen ? 'background-color: rgba(0,0,0,0.02); color: var(--text-muted);' : ''}">
                     <td>${dailyGameNumber++}</td>
@@ -540,6 +575,7 @@ function updateScoreTable() {
                         <span class="type-badge ${typeBadge}" style="display:block; font-size: 0.7rem; margin-top: 2px;">${game.type || 'パねぇ！'}</span>
                         ${isOpen ? '<span style="display:block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">🎉 オープン</span>' : ''}
                     </td>
+                    <td class="time-cell">${durationDisplay}</td>
                     ${cells}
                     <td>
                         <button class="btn-icon" onclick="deleteGame('${game.id}')" title="削除">🗑️</button>
@@ -599,7 +635,7 @@ function updateScoreTable() {
 
             rows.push(`
                 <tr class="daily-total-row">
-                    <td colspan="2">📊 合計</td>
+                    <td colspan="3">📊 合計</td>
                     ${dailyCells}
                     <td></td>
                 </tr>
@@ -607,7 +643,7 @@ function updateScoreTable() {
         } else if (dailyGames.some(g => g.isOpen)) {
             rows.push(`
                 <tr class="daily-total-row" style="background-color: transparent;">
-                    <td colspan="${state.players.length + 3}" style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
+                    <td colspan="${state.players.length + 4}" style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
                         ※オープンゲームのため合計計算対象外
                     </td>
                 </tr>
@@ -663,9 +699,9 @@ function updateScoreTable() {
     }).join('');
 
     foot.innerHTML = `
-        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
+        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 4}" style="border: none;"></td></tr>
         <tr>
-            <td colspan="2">🏆 年間合計</td>
+            <td colspan="3">🏆 年間合計</td>
             ${yearCells}
             <td></td>
         </tr>
@@ -1621,6 +1657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFund();
     initModal();
     initRankingEditor();
+    initStopwatch();
 
     // ソートボタンのイベントリスナー
     const sortBtn = document.getElementById('sortDateBtn');
@@ -1734,3 +1771,96 @@ window.moveRankingItem = function (index, direction) {
     renderRankingEditorList();
 };
 
+// =============================================
+// ストップウォッチ機能
+// =============================================
+let stopwatchInterval = null;
+let stopwatchSeconds = 0;
+let stopwatchRunning = false;
+
+function initStopwatch() {
+    const display = document.getElementById('stopwatchTime');
+    const startBtn = document.getElementById('stopwatchStart');
+    const stopBtn = document.getElementById('stopwatchStop');
+    const resetBtn = document.getElementById('stopwatchReset');
+    const applyBtn = document.getElementById('stopwatchApply');
+
+    if (!display || !startBtn || !stopBtn || !resetBtn || !applyBtn) return;
+
+    function updateDisplay() {
+        const mins = Math.floor(stopwatchSeconds / 60);
+        const secs = stopwatchSeconds % 60;
+        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    startBtn.addEventListener('click', () => {
+        if (stopwatchRunning) return;
+        stopwatchRunning = true;
+        display.classList.add('running');
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        stopwatchInterval = setInterval(() => {
+            stopwatchSeconds++;
+            updateDisplay();
+        }, 1000);
+    });
+
+    stopBtn.addEventListener('click', () => {
+        if (!stopwatchRunning) return;
+        stopwatchRunning = false;
+        display.classList.remove('running');
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        if (stopwatchInterval) {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        stopwatchRunning = false;
+        display.classList.remove('running');
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        if (stopwatchInterval) {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+        }
+
+        stopwatchSeconds = 0;
+        updateDisplay();
+    });
+
+    applyBtn.addEventListener('click', () => {
+        const mins = Math.floor(stopwatchSeconds / 60);
+        const secs = stopwatchSeconds % 60;
+        document.getElementById('gameMinutes').value = mins;
+        document.getElementById('gameSeconds').value = secs;
+        showToast(`経過時間 ${mins}分${secs}秒 を入力しました`);
+    });
+}
+
+// グローバルリセット関数（ゲーム保存後に呼ばれる）
+function resetStopwatch() {
+    const display = document.getElementById('stopwatchTime');
+    const startBtn = document.getElementById('stopwatchStart');
+    const stopBtn = document.getElementById('stopwatchStop');
+
+    stopwatchRunning = false;
+    if (display) display.classList.remove('running');
+    if (startBtn) startBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = true;
+
+    if (stopwatchInterval) {
+        clearInterval(stopwatchInterval);
+        stopwatchInterval = null;
+    }
+
+    stopwatchSeconds = 0;
+    if (display) {
+        display.textContent = '00:00';
+    }
+}

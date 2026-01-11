@@ -62,6 +62,30 @@
                     <div class="score-input-grid" id="scoreInputGrid">
                         <!-- プレイヤー入力フィールドがJSで生成される -->
                     </div>
+                    <!-- ストップウォッチ＆時間入力 -->
+                    <div class="stopwatch-section">
+                        <div class="stopwatch-display">
+                            <span id="stopwatchTime">00:00</span>
+                        </div>
+                        <div class="stopwatch-controls">
+                            <button type="button" id="stopwatchStart" class="btn btn-success btn-sm">▶ スタート</button>
+                            <button type="button" id="stopwatchStop" class="btn btn-secondary btn-sm" disabled>⏸
+                                ストップ</button>
+                            <button type="button" id="stopwatchReset" class="btn btn-secondary btn-sm">🔄 リセット</button>
+                            <button type="button" id="stopwatchApply" class="btn btn-primary btn-sm">📝 入力</button>
+                        </div>
+                        <div class="time-input-group">
+                            <label>⏱️ 経過時間:</label>
+                            <div class="time-inputs">
+                                <input type="number" id="gameMinutes" placeholder="0" min="0" max="999"
+                                    inputmode="numeric">
+                                <span>分</span>
+                                <input type="number" id="gameSeconds" placeholder="0" min="0" max="59"
+                                    inputmode="numeric">
+                                <span>秒</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="open-game-toggle">
                         <label class="toggle-switch">
                             <input type="checkbox" id="openGameMode">

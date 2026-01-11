@@ -1,10 +1,10 @@
 /* =============================================
-   UNO得点記録 - スタイルシート
+   UNO蠕礼せ險倬鹸 - 繧ｹ繧ｿ繧､繝ｫ繧ｷ繝ｼ繝�
    ============================================= */
 
-/* CSS変数 */
+/* CSS螟画焚 */
 :root {
-    /* カラーパレット - ライトテーマ */
+    /* 繧ｫ繝ｩ繝ｼ繝代Ξ繝�ヨ - 繝ｩ繧､繝医ユ繝ｼ繝� */
     --bg-primary: #f5f7fa;
     --bg-secondary: #ffffff;
     --bg-card: #ffffff;
@@ -20,32 +20,32 @@
     --accent-red: #dc3545;
     --accent-purple: #7c3aed;
 
-    /* 1位・ビリの色 */
+    /* 1菴阪�繝薙Μ縺ｮ濶ｲ */
     --color-winner: #e67700;
-    /* オレンジ - 1位（勝者） */
+    /* 繧ｪ繝ｬ繝ｳ繧ｸ - 1菴搾ｼ亥享閠�ｼ� */
     --color-loser: #0095cc;
-    /* 水色 - ビリ（敗者） */
+    /* 豌ｴ濶ｲ - 繝薙Μ�域風閠�ｼ� */
 
-    /* グラデーション */
+    /* 繧ｰ繝ｩ繝��繧ｷ繝ｧ繝ｳ */
     --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --gradient-card: linear-gradient(145deg, #ffffff 0%, #f0f0f5 100%);
 
-    /* ボーダー */
+    /* 繝懊�繝繝ｼ */
     --border-color: rgba(0, 0, 0, 0.1);
     --border-radius: 12px;
     --border-radius-sm: 8px;
 
-    /* シャドウ */
+    /* 繧ｷ繝｣繝峨え */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
     --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.15);
 
-    /* トランジション */
+    /* 繝医Λ繝ｳ繧ｸ繧ｷ繝ｧ繝ｳ */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.3s ease;
 }
 
-/* リセット */
+/* 繝ｪ繧ｻ繝�ヨ */
 *,
 *::before,
 *::after {
@@ -54,7 +54,7 @@
     padding: 0;
 }
 
-/* ベーススタイル */
+/* 繝吶�繧ｹ繧ｹ繧ｿ繧､繝ｫ */
 html {
     font-size: 16px;
     scroll-behavior: smooth;
@@ -68,7 +68,7 @@ body {
     min-height: 100vh;
 }
 
-/* アプリコンテナ */
+/* 繧｢繝励Μ繧ｳ繝ｳ繝�リ */
 .app-container {
     display: flex;
     flex-direction: column;
@@ -79,7 +79,7 @@ body {
 }
 
 /* =============================================
-   ヘッダー
+   繝倥ャ繝繝ｼ
    ============================================= */
 .header {
     padding: 1rem 0;
@@ -142,7 +142,7 @@ body {
 }
 
 /* =============================================
-   タブナビゲーション
+   繧ｿ繝悶リ繝薙ご繝ｼ繧ｷ繝ｧ繝ｳ
    ============================================= */
 .tab-nav {
     display: flex;
@@ -183,7 +183,7 @@ body {
 }
 
 /* =============================================
-   メインコンテンツ
+   繝｡繧､繝ｳ繧ｳ繝ｳ繝�Φ繝�
    ============================================= */
 .main-content {
     flex: 1;
@@ -212,7 +212,7 @@ body {
 }
 
 /* =============================================
-   カード
+   繧ｫ繝ｼ繝�
    ============================================= */
 .card {
     background: var(--bg-card);
@@ -243,7 +243,7 @@ body {
 }
 
 /* =============================================
-   得点入力フォーム
+   蠕礼せ蜈･蜉帙ヵ繧ｩ繝ｼ繝�
    ============================================= */
 .game-options {
     display: flex;
@@ -332,7 +332,7 @@ body {
     font-weight: 400;
 }
 
-/* オープンゲームトグル */
+/* 繧ｪ繝ｼ繝励Φ繧ｲ繝ｼ繝�繝医げ繝ｫ */
 .open-game-toggle {
     display: flex;
     align-items: center;
@@ -402,7 +402,7 @@ body {
 }
 
 /* =============================================
-   ボタン
+   繝懊ち繝ｳ
    ============================================= */
 .btn {
     padding: 0.75rem 1.5rem;
@@ -453,7 +453,7 @@ body {
 }
 
 /* =============================================
-   直近のゲーム結果
+   逶ｴ霑代�繧ｲ繝ｼ繝�邨先棡
    ============================================= */
 .recent-games {
     display: flex;
@@ -523,7 +523,7 @@ body {
 }
 
 /* =============================================
-   テーブル
+   繝��繝悶Ν
    ============================================= */
 .table-container {
     overflow-x: auto;
@@ -536,6 +536,7 @@ body {
     border-collapse: collapse;
     font-size: 1.25rem;
     font-weight: 600;
+    table-layout: fixed;
 }
 
 .score-table th,
@@ -544,6 +545,31 @@ body {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* #列と日付列は固定幅 */
+.score-table th:nth-child(1),
+.score-table td:nth-child(1) {
+    width: 40px;
+}
+
+.score-table th:nth-child(2),
+.score-table td:nth-child(2) {
+    width: 70px;
+}
+
+/* 時間列 */
+.score-table th:nth-child(3),
+.score-table td:nth-child(3) {
+    width: 50px;
+}
+
+/* 操作列 */
+.score-table th:last-child,
+.score-table td:last-child {
+    width: 50px;
 }
 
 .score-table th {
@@ -581,7 +607,7 @@ body {
     border-top: 2px solid var(--border-color);
 }
 
-/* セルの色付け */
+/* 繧ｻ繝ｫ縺ｮ濶ｲ莉倥￠ */
 .cell-winner {
     background: rgba(255, 140, 0, 0.3) !important;
     font-weight: 700;
@@ -619,7 +645,7 @@ body {
     font-weight: 700;
 }
 
-/* 日ごとの合計行 */
+/* 譌･縺斐→縺ｮ蜷郁ｨ郁｡� */
 .daily-total-row {
     background: var(--bg-secondary) !important;
     border-top: 2px solid var(--accent-purple) !important;
@@ -630,7 +656,7 @@ body {
     border-bottom: 2px solid var(--accent-purple) !important;
 }
 
-/* 日付ヘッダー */
+/* 譌･莉倥�繝�ム繝ｼ */
 .date-header-row {
     background: linear-gradient(90deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)) !important;
 }
@@ -642,7 +668,7 @@ body {
     padding-left: 1rem;
 }
 
-/* 削除ボタン */
+/* 蜑企勁繝懊ち繝ｳ */
 .delete-game-btn {
     background: none;
     border: none;
@@ -659,7 +685,7 @@ body {
     background: rgba(255, 71, 87, 0.1);
 }
 
-/* ゲーム数表示 */
+/* 繧ｲ繝ｼ繝�謨ｰ陦ｨ遉ｺ */
 .game-count {
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -669,7 +695,7 @@ body {
 }
 
 /* =============================================
-   ランキング
+   繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ
    ============================================= */
 .ranking-grid {
     display: grid;
@@ -725,7 +751,7 @@ body {
 }
 
 /* =============================================
-   統計・グラフ
+   邨ｱ險医�繧ｰ繝ｩ繝�
    ============================================= */
 .stats-grid {
     display: grid;
@@ -743,7 +769,7 @@ body {
     height: 250px;
 }
 
-/* サマリーグリッド */
+/* 繧ｵ繝槭Μ繝ｼ繧ｰ繝ｪ繝�ラ */
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -780,7 +806,7 @@ body {
 }
 
 /* =============================================
-   UNO基金
+   UNO蝓ｺ驥�
    ============================================= */
 .uno-fund-card {
     border: 2px solid var(--accent-orange);
@@ -850,7 +876,7 @@ body {
 }
 
 /* =============================================
-   設定
+   險ｭ螳�
    ============================================= */
 .player-list {
     display: flex;
@@ -898,7 +924,7 @@ body {
     gap: 0.75rem;
 }
 
-/* ヘルプコンテンツ */
+/* 繝倥Ν繝励さ繝ｳ繝�Φ繝� */
 .help-content {
     font-size: 0.9rem;
     color: var(--text-secondary);
@@ -919,7 +945,7 @@ body {
 }
 
 /* =============================================
-   モーダル
+   繝｢繝ｼ繝繝ｫ
    ============================================= */
 .modal {
     display: none;
@@ -979,7 +1005,7 @@ body {
 }
 
 /* =============================================
-   トースト通知
+   繝医�繧ｹ繝磯夂衍
    ============================================= */
 .toast {
     position: fixed;
@@ -1009,7 +1035,7 @@ body {
 }
 
 /* =============================================
-   フッター
+   繝輔ャ繧ｿ繝ｼ
    ============================================= */
 .footer {
     text-align: center;
@@ -1021,7 +1047,7 @@ body {
 }
 
 /* =============================================
-   レスポンシブ
+   繝ｬ繧ｹ繝昴Φ繧ｷ繝�
    ============================================= */
 @media (max-width: 768px) {
     html {
@@ -1083,7 +1109,7 @@ body {
         padding: 0.4rem 0.5rem;
     }
 
-    /* スマホでは固定カラムを解除 */
+    /* 繧ｹ繝槭�縺ｧ縺ｯ蝗ｺ螳壹き繝ｩ繝�繧定ｧ｣髯､ */
     .score-table th:first-child,
     .score-table td:first-child {
         position: static !important;
@@ -1094,7 +1120,7 @@ body {
 }
 
 /* =============================================
-   スクロールバー
+   繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ繝舌�
    ============================================= */
 ::-webkit-scrollbar {
     width: 8px;
@@ -1114,14 +1140,14 @@ body {
     background: var(--text-muted);
 }
 
-/* フォーカス可視性 */
+/* 繝輔か繝ｼ繧ｫ繧ｹ蜿ｯ隕匁ｧ */
 :focus-visible {
     outline: 2px solid var(--accent-cyan);
     outline-offset: 2px;
 }
 
 /* =============================================
-   ランキング編集モーダル
+   繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ邱ｨ髮�Δ繝ｼ繝繝ｫ
    ============================================= */
 .ranking-editor-list {
     display: flex;
@@ -1173,7 +1199,8 @@ body {
     color: var(--text-muted);
     margin-left: 0.5rem;
 }
-/* ���߃Q�[���̃e�[�u���� */
+
+/* 直近ゲームのテーブル化 */
 .recent-games-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1202,7 +1229,7 @@ body {
     font-size: 0.8rem;
 }
 
-/* ���߃Q�[���̓��t��Œ� */
+/* 直近ゲームの日付列固定 */
 .recent-games-table .sticky-col {
     position: sticky;
     left: 0;
@@ -1217,7 +1244,7 @@ body {
     background: var(--bg-secondary);
 }
 
-/* �R���p�N�g�����L���O */
+/* コンパクトランキング */
 .ranking-grid.compact {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 0.5rem;
@@ -1237,7 +1264,7 @@ body {
     font-size: 1rem;
 }
 
-/* �L�^�ꗗ�̃R���g���[�� */
+/* 記録一覧のコントロール */
 .record-controls {
     display: flex;
     align-items: center;
@@ -1245,7 +1272,7 @@ body {
 }
 
 
-/* �����L���O�̉��X�N���[���Ή� */
+/* ランキングの横スクロール対応 */
 .ranking-scroll-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1277,3 +1304,103 @@ body {
     background: var(--bg-card);
 }
 
+/* =============================================
+   ストップウォッチ
+   ============================================= */
+.stopwatch-section {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.stopwatch-display {
+    font-family: 'Outfit', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    background: var(--bg-primary);
+    padding: 0.5rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+    min-width: 140px;
+    text-align: center;
+}
+
+.stopwatch-display.running {
+    border-color: var(--accent-green);
+    animation: pulse 1s infinite;
+}
+
+.stopwatch-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.time-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.time-input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.time-inputs input {
+    width: 60px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.time-inputs input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+}
+
+.time-inputs span {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.btn-success {
+    background: var(--accent-green);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #00c078;
+}
+
+/* 時間セル */
+.time-cell {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-weight: 500;
+    min-width: 45px;
+    text-align: center;
+}
