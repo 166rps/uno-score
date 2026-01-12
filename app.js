@@ -13,6 +13,21 @@ try {
     if (typeof firebase !== 'undefined' && firebaseConfig && firebaseConfig.apiKey !== "YOUR_API_KEY") {
         firebase.initializeApp(firebaseConfig);
         db = firebase.database(); // Realtime Databaseを使用
+
+        // 匿名認証を開始
+        firebase.auth().signInAnonymously().catch(e => {
+            console.error('Auth error:', e);
+            showToast('ログイン失敗: 設定を確認してください (' + e.code + ')', true);
+        });
+
+        // 認証状態の変化を監視し、認証完了後にデータロード
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                console.log('Signed in anonymously:', user.uid);
+                loadData(); // 認証後にロード（再試行）
+            }
+        });
+
         console.log('Firebase (RTDB) initialized');
     } else {
         console.log('Firebase configure pending...');
@@ -91,6 +106,15 @@ async function saveData() {
 // データを読み込み
 async function loadData() {
     if (db) {
+        // 認証がまだ完了していない場合は待機（onAuthStateChangedで呼ばれる）
+        if (!firebase.auth().currentUser) {
+            console.log('Waiting for auth to load data...');
+            return;
+        }
+
+        // 既存のリスナーがあれば解除（重複防止）
+        db.ref(DB_PATH).off();
+
         // リアルタイム同期を設定
         db.ref(DB_PATH).on('value', (snapshot) => {
             const data = snapshot.val();
@@ -114,6 +138,7 @@ async function loadData() {
             }
         }, (error) => {
             console.error('RTDB sync error:', error);
+            showToast('データ読込エラー: ' + error.message, true); // エラー理由を表示
             loadFromLocal();
         });
     } else {
