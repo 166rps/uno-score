@@ -921,8 +921,11 @@ function updateDailyRanking() {
         return;
     }
 
-    // 最新の日付を取得
-    const latestDate = [...new Set(yearGames.map(g => g.date))].sort().pop();
+    // 最新の日付を取得（日付オブジェクトとして比較して最も新しい日付を取得）
+    const uniqueDates = [...new Set(yearGames.map(g => g.date))];
+    const latestDate = uniqueDates.reduce((latest, current) => {
+        return new Date(current) > new Date(latest) ? current : latest;
+    }, uniqueDates[0]);
     const dailyGames = yearGames.filter(g => g.date === latestDate);
 
     // 日別合計を計算
