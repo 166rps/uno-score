@@ -1684,7 +1684,13 @@ function initFund() {
 
 function updateFundDisplay() {
     const historyContainer = document.getElementById('fundHistory');
+    const fundInput = document.getElementById('fundAmount');
     if (!historyContainer) return;
+
+    // 入力欄も更新（Firebaseからロードされた値を反映）
+    if (fundInput && state.fund > 0) {
+        fundInput.value = state.fund;
+    }
 
     if (state.fund > 0) {
         historyContainer.innerHTML = `
@@ -1741,6 +1747,7 @@ function updateAllDisplays() {
     updateRecentGames();
     updateScoreTable();
     updateRanking();
+    updateFundDisplay(); // UNO基金の表示も更新
 
     // 統計タブが表示中なら更新
     if (document.getElementById('stats-tab').classList.contains('active')) {

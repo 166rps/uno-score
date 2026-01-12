@@ -716,12 +716,14 @@ body {
     border-bottom: 3px solid var(--accent-orange) !important;
 }
 
-/* 譌･莉倥�繝�ム繝ｼ */
+/* 日付ヘッダー */
 .date-header-row {
     background: linear-gradient(90deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)) !important;
 }
 
+/* 日付ヘッダーと前の行（合計行など）の間にスペースを作る */
 .date-header-row td {
+    border-top: 20px solid transparent !important;
     font-weight: 700;
     color: var(--text-primary);
     text-align: left;
