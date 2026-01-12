@@ -79,15 +79,12 @@ body {
 }
 
 /* =============================================
-   繝倥ャ繝繝ｼ
+   ヘッダー
    ============================================= */
 .header {
     padding: 1rem 0;
     border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
     background: var(--bg-primary);
-    z-index: 100;
 }
 
 .header-content {
@@ -150,6 +147,12 @@ body {
     padding: 1rem 0;
     overflow-x: auto;
     scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 99;
+    margin: 0 -1rem;
+    padding: 1rem;
 }
 
 .tab-nav::-webkit-scrollbar {
@@ -399,6 +402,8 @@ body {
     gap: 1rem;
     justify-content: flex-end;
     flex-wrap: wrap;
+    order: 98;
+    margin-left: auto;
 }
 
 /* =============================================
@@ -522,6 +527,39 @@ body {
     color: var(--color-loser);
 }
 
+/* ランキングテーブル */
+.recent-games-container {
+    overflow-x: auto;
+}
+
+.recent-games-table {
+    border-collapse: collapse;
+    font-size: 1.2rem;
+    font-weight: 600;
+    table-layout: fixed;
+}
+
+.recent-games-table th,
+.recent-games-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.recent-games-table th {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.recent-games-table td {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
 /* =============================================
    繝��繝悶Ν
    ============================================= */
@@ -533,37 +571,46 @@ body {
 
 .score-table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.7rem;
+    font-weight: 800;
     table-layout: fixed;
 }
 
 .score-table th,
 .score-table td {
-    padding: 0.6rem 0.8rem;
+    padding: 0.4rem 0.3rem;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* #列と日付列は固定幅 */
-.score-table th:nth-child(1),
-.score-table td:nth-child(1) {
-    width: 40px;
+.score-table th:last-child,
+.score-table td:last-child {
+    border-right: none;
 }
 
-.score-table th:nth-child(2),
-.score-table td:nth-child(2) {
-    width: 70px;
+/* #列は固定幅 */
+.score-table th:nth-child(1),
+.score-table td:nth-child(1) {
+    width: 80px !important;
+    min-width: 80px;
+    max-width: 80px;
+    padding: 0.4rem 0.2rem;
 }
 
 /* 時間列 */
-.score-table th:nth-child(3),
-.score-table td:nth-child(3) {
-    width: 50px;
+.score-table th:nth-child(2),
+.score-table td:nth-child(2) {
+    width: 80px !important;
+    min-width: 80px;
+    max-width: 80px;
+    font-size: 1.2rem;
+
 }
 
 /* 操作列 */
@@ -653,7 +700,20 @@ body {
 
 .daily-total-row td {
     font-weight: 700;
+    font-size: 1.7rem !important;
     border-bottom: 2px solid var(--accent-purple) !important;
+}
+
+/* 年間合計行 */
+.yearly-total-row {
+    background: var(--bg-secondary) !important;
+    border-top: 3px solid var(--accent-orange) !important;
+}
+
+.yearly-total-row td {
+    font-weight: 700;
+    font-size: 1.7rem !important;
+    border-bottom: 3px solid var(--accent-orange) !important;
 }
 
 /* 譌･莉倥�繝�ム繝ｼ */
@@ -663,9 +723,16 @@ body {
 
 .date-header-row td {
     font-weight: 700;
-    color: var(--accent-cyan);
+    color: var(--text-primary);
     text-align: left;
     padding-left: 1rem;
+    font-size: 1.7rem;
+}
+
+.date-header-row .type-badge {
+    color: var(--text-primary);
+    font-size: 1.7rem !important;
+    font-weight: 700;
 }
 
 /* 蜑企勁繝懊ち繝ｳ */
@@ -1101,21 +1168,41 @@ body {
     }
 
     .score-table {
-        font-size: 0.8rem;
+        font-size: 1.7rem;
+        font-weight: 800;
     }
 
     .score-table th,
     .score-table td {
-        padding: 0.4rem 0.5rem;
+        padding: 0.5rem 0.4rem;
+        min-width: auto;
     }
 
-    /* 繧ｹ繝槭�縺ｧ縺ｯ蝗ｺ螳壹き繝ｩ繝�繧定ｧ｣髯､ */
+    /* スマホでは固定幅を解除 */
+    .score-table th:nth-child(1),
+    .score-table td:nth-child(1),
+    .score-table th:nth-child(2),
+    .score-table td:nth-child(2),
+    .score-table th:nth-child(3),
+    .score-table td:nth-child(3),
+    .score-table th:last-child,
+    .score-table td:last-child {
+        width: auto;
+    }
+
+    /* スマホでは固定カラムを解除 */
     .score-table th:first-child,
     .score-table td:first-child {
         position: static !important;
         z-index: auto !important;
         border-right: none;
         background: transparent;
+    }
+
+    /* ストップウォッチをコンパクトに */
+    .stopwatch-section {
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }
 
@@ -1237,11 +1324,45 @@ body {
     z-index: 10;
     border-right: 1px solid var(--border-color);
     text-align: left;
-    min-width: 80px;
+    min-width: 50px;
+    max-width: 65px;
+    padding: 0.3rem 0.4rem;
 }
 
 .recent-games-table th.sticky-col {
     background: var(--bg-secondary);
+}
+
+/* ランキングテーブルの幅統一 */
+.recent-games-table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    table-layout: auto;
+}
+
+.recent-games-table th,
+.recent-games-table td {
+    padding: 0.4rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+    overflow: visible;
+    min-width: 70px;
+}
+
+.recent-games-table th:last-child,
+.recent-games-table td:last-child {
+    border-right: none;
+}
+
+.recent-games-table th {
+    font-size: 1.7rem;
+    font-weight: 600;
 }
 
 /* コンパクトランキング */
@@ -1281,8 +1402,10 @@ body {
 
 .ranking-table {
     width: 100%;
+    min-width: 700px;
     border-collapse: collapse;
     font-size: 0.9rem;
+    table-layout: auto;
 }
 
 .ranking-table th,
@@ -1291,13 +1414,15 @@ body {
     text-align: center;
     border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
+    min-width: 90px;
+    overflow: visible;
 }
 
 .ranking-table th {
     background: var(--bg-secondary);
     color: var(--text-muted);
-    font-weight: normal;
-    font-size: 0.85rem;
+    font-weight: 600;
+    font-size: 1.7rem;
 }
 
 .ranking-table td {
@@ -1310,7 +1435,7 @@ body {
 .stopwatch-section {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     margin: 1rem 0;
     display: flex;
     flex-direction: row;
@@ -1322,27 +1447,27 @@ body {
 
 .stopwatch-display {
     font-family: 'Outfit', monospace;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
     background: var(--bg-primary);
-    padding: 0.5rem 1.5rem;
-    border-radius: var(--border-radius);
+    padding: 0.4rem 1rem;
+    border-radius: var(--border-radius-sm);
     border: 2px solid var(--border-color);
-    min-width: 140px;
+    min-width: 100px;
     text-align: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    order: 99;
+}
+
+.stopwatch-display:hover {
+    border-color: var(--accent-cyan);
 }
 
 .stopwatch-display.running {
+    color: var(--accent-green);
     border-color: var(--accent-green);
-    animation: pulse 1s infinite;
-}
-
-.stopwatch-controls {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
-    align-items: center;
 }
 
 .time-input-group {
@@ -1403,4 +1528,71 @@ body {
     font-weight: 500;
     min-width: 45px;
     text-align: center;
+}
+
+/* コンパクトトグルスイッチ */
+.toggle-switch-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    background: var(--bg-hover);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.toggle-switch-compact input {
+    width: 36px;
+    height: 20px;
+    appearance: none;
+    background: var(--border-color);
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.toggle-switch-compact input::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: var(--transition-fast);
+}
+
+.toggle-switch-compact input:checked {
+    background: var(--accent-purple);
+}
+
+.toggle-switch-compact input:checked::before {
+    left: 18px;
+}
+
+.toggle-label-compact {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* グラフ日付セレクタ */
+.chart-date-select {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.chart-date-select:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
 }

@@ -62,17 +62,11 @@
                     <div class="score-input-grid" id="scoreInputGrid">
                         <!-- プレイヤー入力フィールドがJSで生成される -->
                     </div>
-                    <!-- ストップウォッチ＆時間入力 -->
+                    <!-- ストップウォッチ＆オープンゲーム -->
                     <div class="stopwatch-section">
-                        <div class="stopwatch-display">
-                            <span id="stopwatchTime">00:00</span>
-                        </div>
-                        <div class="stopwatch-controls">
-                            <button type="button" id="stopwatchStart" class="btn btn-success btn-sm">▶ スタート</button>
-                            <button type="button" id="stopwatchStop" class="btn btn-secondary btn-sm" disabled>⏸
-                                ストップ</button>
-                            <button type="button" id="stopwatchReset" class="btn btn-secondary btn-sm">🔄 リセット</button>
-                            <button type="button" id="stopwatchApply" class="btn btn-primary btn-sm">📝 入力</button>
+                        <div class="toggle-switch-compact" title="オープンゲーム（統計に換算しない）">
+                            <input type="checkbox" id="openGameMode">
+                            <span class="toggle-label-compact">🎉 Open</span>
                         </div>
                         <div class="time-input-group">
                             <label>⏱️ 経過時間:</label>
@@ -85,17 +79,13 @@
                                 <span>秒</span>
                             </div>
                         </div>
-                    </div>
-                    <div class="open-game-toggle">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="openGameMode">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span class="toggle-label">🎉 オープンゲーム（統計に換算しない）</span>
-                    </div>
-                    <div class="input-actions">
-                        <button id="clearInputs" class="btn btn-secondary">🔄 クリア</button>
-                        <button id="saveGame" class="btn btn-primary">💾 記録する</button>
+                        <div class="input-actions">
+                            <button id="clearInputs" class="btn btn-secondary">🔄 クリア</button>
+                            <button id="saveGame" class="btn btn-primary">💾 記録する</button>
+                        </div>
+                        <div class="stopwatch-display" id="stopwatchDisplay" title="タップで開始/停止">
+                            <span id="stopwatchTime">00:00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -115,19 +105,19 @@
 
             <!-- 記録一覧タブ -->
             <section id="records-tab" class="tab-content">
-                <!-- 直近日のランキング -->
+                <!-- ランキング（直近日＆年間） -->
                 <div class="card">
-                    <h2>📅 直近日の順位</h2>
+                    <h2>📅 直近日の順位 <span id="dailyRankingDate"
+                            style="font-size: 1.0rem; font-weight: 500; color: var(--text-muted);"></span></h2>
                     <div id="dailyRankingGrid">
                         <!-- 直近日ランキングがJSで生成される -->
                     </div>
-                </div>
 
-                <!-- 年間ランキング -->
-                <div class="card">
-                    <h2>🏆 年間順位</h2>
-                    <div id="yearlyRankingGrid">
-                        <!-- 年間ランキングがJSで生成される -->
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <h2>🏆 年間順位</h2>
+                        <div id="yearlyRankingGrid">
+                            <!-- 年間ランキングがJSで生成される -->
+                        </div>
                     </div>
                 </div>
 
@@ -163,7 +153,12 @@
             <section id="stats-tab" class="tab-content">
                 <div class="stats-grid">
                     <div class="card">
-                        <h2>📈 累計得点推移</h2>
+                        <div class="card-header">
+                            <h2>📈 累計得点推移</h2>
+                            <select id="chartDateSelector" class="chart-date-select">
+                                <option value="all">📅 年間全体</option>
+                            </select>
+                        </div>
                         <div class="chart-container">
                             <canvas id="lineChart"></canvas>
                         </div>

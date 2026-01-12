@@ -256,6 +256,10 @@ function initScoreInput() {
         // 時間入力もクリア
         document.getElementById('gameMinutes').value = '';
         document.getElementById('gameSeconds').value = '';
+        // ストップウォッチをリセット
+        if (typeof resetStopwatch === 'function') {
+            resetStopwatch();
+        }
     });
 
     // 保存ボタン
@@ -390,10 +394,8 @@ function updateRecentGames() {
         return `
             <tr style="${isOpen ? 'background-color: rgba(0,0,0,0.02);' : ''}">
                 <td class="sticky-col">
-                    <div style="font-size: 0.8rem; line-height: 1.2;">
-                        ${formatDate(game.date)}<br>
-                        <span class="type-badge ${typeBadge}" style="font-size: 0.65rem;">${game.type || 'パねぇ！'}</span>
-                        ${isOpen ? '<span style="display:block; font-size: 0.65rem; color: var(--text-muted);">Open</span>' : ''}
+                    <div style="font-size: 0.8rem; line-height: 1.2; white-space: nowrap;">
+                        ${formatDate(game.date)} <span class="type-badge ${typeBadge}" style="font-size: 0.65rem;">${game.type || 'パねぇ！'}</span>${isOpen ? ' <span style="font-size: 0.65rem; color: var(--text-muted);">Open</span>' : ''}
                     </div>
                 </td>
                 <td class="time-cell">${durationDisplay}</td>
@@ -444,19 +446,19 @@ function updateScoreTable() {
 
     countDisplay.textContent = `${yearGames.length}ゲーム` + (openGamesCount > 0 ? ` (うちオープン${openGamesCount})` : '');
 
-    // ヘッダー生成
+    // ヘッダー生成（幅固定用の隠しヘッダー）
+    // table-layout: fixedを機能させるため、theadに列幅定義用の行を配置する
     header.innerHTML = `
-        <th>#</th>
-        <th>日付</th>
-        <th style="width: 50px;">⏱️</th>
-        ${state.players.map(p => `<th>${p}</th>`).join('')}
-        <th>操作</th>
+        <th style="width: 80px; height: 0; padding: 0; border: none; visibility: hidden;"></th>
+        <th style="width: 80px; height: 0; padding: 0; border: none; visibility: hidden;"></th>
+        ${state.players.map(p => '<th style="height: 0; padding: 0; border: none; visibility: hidden;"></th>').join('')}
+        <th style="height: 0; padding: 0; border: none; visibility: hidden;"></th>
     `;
 
     if (yearGames.length === 0) {
         body.innerHTML = `
             <tr>
-                <td colspan="${state.players.length + 4}" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                <td colspan="${state.players.length + 3}" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                     ${state.currentYear}年のゲーム記録がありません
                 </td>
             </tr>
@@ -490,10 +492,22 @@ function updateScoreTable() {
         const dailyGames = gamesByDate[date];
         let dailyGameNumber = 1; // 日毎にリセット
 
-        // 日付ヘッダー行
+        // 日付ヘッダー行（その日の代表的なゲーム種類を表示）
+        const dayType = dailyGames[0]?.type || 'パねぇ！';
+        const typeBadgeClass = dayType === 'パーチー' ? 'type-party' : (dayType === '普通' ? 'type-normal' : 'type-panee');
         rows.push(`
             <tr class="date-header-row">
-                <td colspan="${state.players.length + 4}">📅 ${formatFullDate(date)}</td>
+                <td colspan="${state.players.length + 3}">
+                    📅 ${formatFullDate(date)}
+                    <span class="type-badge ${typeBadgeClass}" style="margin-left: 0.5rem;">${dayType}</span>
+                </td>
+            </tr>
+            <!-- 列ヘッダー行を日付ごとに挿入 -->
+            <tr class="column-header-row" style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
+                <th style="padding: 0.5rem; width: 80px;">#</th>
+                <th style="padding: 0.5rem; width: 80px;">⏱️</th>
+                ${state.players.map(p => `<th style="padding: 0.5rem;">${p}</th>`).join('')}
+                <th style="padding: 0.5rem;">操作</th>
             </tr>
         `);
 
@@ -551,12 +565,12 @@ function updateScoreTable() {
                 }
 
                 // cell-choice-neededの場合、ツールチップ的なものを出したいが、シンプルに
-                let content = score;
+                let content = `<span style="font-size:inherit;">${score}</span>`;
                 if (className.includes('cell-choice-needed')) {
-                    content += '<span style="font-size:0.6rem; display:block; opacity:0.7;">👈選ぶ</span>';
+                    content += '<span style="font-size:0.5rem; display:block; opacity:0.7; margin-top:-3px;">👈選ぶ</span>';
                 }
                 if (game.trueWinner === player) {
-                    content += '<span style="font-size:0.6rem; display:block;">★勝者</span>';
+                    content += '<span style="font-size:0.5rem; display:block; margin-top:-3px;">★勝者</span>';
                 }
 
                 return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
@@ -570,12 +584,7 @@ function updateScoreTable() {
             rows.push(`
                 <tr class="${rowClass}" style="${isOpen ? 'background-color: rgba(0,0,0,0.02); color: var(--text-muted);' : ''}">
                     <td>${dailyGameNumber++}</td>
-                    <td style="font-size: 0.85rem;">
-                        ${idx + 1}回目
-                        <span class="type-badge ${typeBadge}" style="display:block; font-size: 0.7rem; margin-top: 2px;">${game.type || 'パねぇ！'}</span>
-                        ${isOpen ? '<span style="display:block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">🎉 オープン</span>' : ''}
-                    </td>
-                    <td class="time-cell">${durationDisplay}</td>
+                    <td class="time-cell">${durationDisplay}${isOpen ? '<span style="display:block; font-size: 0.6rem; color: var(--text-muted);">Open</span>' : ''}</td>
                     ${cells}
                     <td>
                         <button class="btn-icon" onclick="deleteGame('${game.id}')" title="削除">🗑️</button>
@@ -614,7 +623,7 @@ function updateScoreTable() {
                     // 0点同点の場合、勝者選択可能に
                     if (dailyWinner === player) {
                         className = 'cell-winner';
-                        content = `${score}<br><span style="font-size:0.7rem;">★勝者</span>`;
+                        content = `<span style="font-size:inherit;">${score}</span><span style="font-size:0.6rem; display:block; margin-top:-2px;">★勝者</span>`;
                     } else if (dailyWinner) {
                         // 別の人が勝者に選ばれている場合
                         className = '';
@@ -635,7 +644,7 @@ function updateScoreTable() {
 
             rows.push(`
                 <tr class="daily-total-row">
-                    <td colspan="3">📊 合計</td>
+                    <td colspan="2">📊 合計</td>
                     ${dailyCells}
                     <td></td>
                 </tr>
@@ -643,7 +652,7 @@ function updateScoreTable() {
         } else if (dailyGames.some(g => g.isOpen)) {
             rows.push(`
                 <tr class="daily-total-row" style="background-color: transparent;">
-                    <td colspan="${state.players.length + 4}" style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
+                    <td colspan="${state.players.length + 3}" style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
                         ※オープンゲームのため合計計算対象外
                     </td>
                 </tr>
@@ -679,7 +688,7 @@ function updateScoreTable() {
             // 0点同点の場合、勝者選択可能に
             if (yearlyWinner === player) {
                 className = 'cell-winner';
-                content = `${score.toLocaleString()}<br><span style="font-size:0.7rem;">★勝者</span>`;
+                content = `<span style="font-size:inherit;">${score.toLocaleString()}</span><span style="font-size:0.6rem; display:block; margin-top:-2px;">★勝者</span>`;
             } else if (yearlyWinner) {
                 // 別の人が勝者に選ばれている場合
                 className = '';
@@ -699,9 +708,9 @@ function updateScoreTable() {
     }).join('');
 
     foot.innerHTML = `
-        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 4}" style="border: none;"></td></tr>
-        <tr>
-            <td colspan="3">🏆 年間合計</td>
+        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
+        <tr class="yearly-total-row">
+            <td colspan="2">🏆 年間合計</td>
             ${yearCells}
             <td></td>
         </tr>
@@ -773,6 +782,24 @@ window.toggleYearlyWinner = function (year, playerName) {
     updateScoreTable();
 };
 
+// ゲームタイプを循環変更
+window.cycleGameType = function (gameId) {
+    const gameIndex = state.games.findIndex(g => g.id === gameId);
+    if (gameIndex === -1) return;
+
+    const game = state.games[gameIndex];
+    const types = ['パねぇ！', 'パーチー', '普通'];
+    const currentIndex = types.indexOf(game.type || 'パねぇ！');
+    const nextIndex = (currentIndex + 1) % types.length;
+
+    game.type = types[nextIndex];
+    state.games[gameIndex] = game;
+
+    saveToStorage();
+    updateScoreTable();
+    showToast(`種類を「${game.type}」に変更しました`);
+};
+
 // =============================================
 // ランキング表示
 // =============================================
@@ -831,9 +858,14 @@ function updateDailyRanking() {
     // 調整ボタン
     const buttonHtml = `<button onclick="showRankingEditor('daily', '${latestDate}')" class="btn btn-secondary btn-sm" style="white-space:nowrap;">⚡ 調整</button>`;
 
+    // タイトル横に日付を表示
+    const dateSpan = document.getElementById('dailyRankingDate');
+    if (dateSpan) {
+        dateSpan.textContent = formatDate(latestDate);
+    }
+
     // 直近のゲーム結果と同じスタイルのテーブル形式
     container.innerHTML = `
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">${formatDate(latestDate)}</div>
         <div class="recent-games-container">
             <table class="recent-games-table">
                 <thead>
@@ -930,9 +962,56 @@ function updateCharts() {
 
 function updateLineChart() {
     const ctx = document.getElementById('lineChart');
+    const selector = document.getElementById('chartDateSelector');
     if (!ctx) return;
 
-    const yearGames = getGamesForYear(state.currentYear, true); // オープンゲーム除外
+    // グラフ用は常に古い順（昇順）でソート
+    let allYearGames = state.games.filter(game => {
+        const gameYear = new Date(game.date).getFullYear();
+        if (gameYear !== state.currentYear) return false;
+        if (game.isOpen) return false; // オープンゲーム除外
+        return true;
+    });
+    allYearGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 日付のリストを取得
+    const dates = [...new Set(allYearGames.map(g => g.date))].sort();
+
+    // セレクタを更新
+    if (selector) {
+        const currentValue = selector.value;
+        selector.innerHTML = '<option value="all">📅 年間全体</option>';
+        dates.forEach(date => {
+            const d = new Date(date);
+            const label = `${d.getMonth() + 1}/${d.getDate()}`;
+            selector.innerHTML += `<option value="${date}">${label}</option>`;
+        });
+
+        // 直近の日付をデフォルトに（初回のみ）
+        if (!state.chartSelectedDate && dates.length > 0) {
+            state.chartSelectedDate = dates[dates.length - 1]; // 直近の日付
+        }
+
+        // 選択値を復元
+        if (state.chartSelectedDate && dates.includes(state.chartSelectedDate)) {
+            selector.value = state.chartSelectedDate;
+        } else if (currentValue === 'all' || !state.chartSelectedDate) {
+            selector.value = state.chartSelectedDate || (dates.length > 0 ? dates[dates.length - 1] : 'all');
+            state.chartSelectedDate = selector.value;
+        }
+
+        // イベントリスナー（重複防止）
+        selector.onchange = () => {
+            state.chartSelectedDate = selector.value;
+            updateLineChart();
+        };
+    }
+
+    // 選択日付でフィルタ
+    let yearGames = allYearGames;
+    if (state.chartSelectedDate && state.chartSelectedDate !== 'all') {
+        yearGames = allYearGames.filter(g => g.date === state.chartSelectedDate);
+    }
 
     if (state.charts.line) {
         state.charts.line.destroy();
@@ -1779,13 +1858,10 @@ let stopwatchSeconds = 0;
 let stopwatchRunning = false;
 
 function initStopwatch() {
+    const displayContainer = document.getElementById('stopwatchDisplay');
     const display = document.getElementById('stopwatchTime');
-    const startBtn = document.getElementById('stopwatchStart');
-    const stopBtn = document.getElementById('stopwatchStop');
-    const resetBtn = document.getElementById('stopwatchReset');
-    const applyBtn = document.getElementById('stopwatchApply');
 
-    if (!display || !startBtn || !stopBtn || !resetBtn || !applyBtn) return;
+    if (!display || !displayContainer) return;
 
     function updateDisplay() {
         const mins = Math.floor(stopwatchSeconds / 60);
@@ -1793,66 +1869,43 @@ function initStopwatch() {
         display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    startBtn.addEventListener('click', () => {
-        if (stopwatchRunning) return;
-        stopwatchRunning = true;
-        display.classList.add('running');
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+    // ストップウォッチ表示をタップでトグル（開始/停止）
+    displayContainer.addEventListener('click', () => {
+        if (stopwatchRunning) {
+            // 停止
+            stopwatchRunning = false;
+            displayContainer.classList.remove('running');
 
-        stopwatchInterval = setInterval(() => {
-            stopwatchSeconds++;
-            updateDisplay();
-        }, 1000);
-    });
+            if (stopwatchInterval) {
+                clearInterval(stopwatchInterval);
+                stopwatchInterval = null;
+            }
 
-    stopBtn.addEventListener('click', () => {
-        if (!stopwatchRunning) return;
-        stopwatchRunning = false;
-        display.classList.remove('running');
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+            // 自動で時間入力欄に反映
+            const mins = Math.floor(stopwatchSeconds / 60);
+            const secs = stopwatchSeconds % 60;
+            document.getElementById('gameMinutes').value = mins;
+            document.getElementById('gameSeconds').value = secs;
+        } else {
+            // 開始
+            stopwatchRunning = true;
+            displayContainer.classList.add('running');
 
-        if (stopwatchInterval) {
-            clearInterval(stopwatchInterval);
-            stopwatchInterval = null;
+            stopwatchInterval = setInterval(() => {
+                stopwatchSeconds++;
+                updateDisplay();
+            }, 1000);
         }
-    });
-
-    resetBtn.addEventListener('click', () => {
-        stopwatchRunning = false;
-        display.classList.remove('running');
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-
-        if (stopwatchInterval) {
-            clearInterval(stopwatchInterval);
-            stopwatchInterval = null;
-        }
-
-        stopwatchSeconds = 0;
-        updateDisplay();
-    });
-
-    applyBtn.addEventListener('click', () => {
-        const mins = Math.floor(stopwatchSeconds / 60);
-        const secs = stopwatchSeconds % 60;
-        document.getElementById('gameMinutes').value = mins;
-        document.getElementById('gameSeconds').value = secs;
-        showToast(`経過時間 ${mins}分${secs}秒 を入力しました`);
     });
 }
 
 // グローバルリセット関数（ゲーム保存後に呼ばれる）
 function resetStopwatch() {
+    const displayContainer = document.getElementById('stopwatchDisplay');
     const display = document.getElementById('stopwatchTime');
-    const startBtn = document.getElementById('stopwatchStart');
-    const stopBtn = document.getElementById('stopwatchStop');
 
     stopwatchRunning = false;
-    if (display) display.classList.remove('running');
-    if (startBtn) startBtn.disabled = false;
-    if (stopBtn) stopBtn.disabled = true;
+    if (displayContainer) displayContainer.classList.remove('running');
 
     if (stopwatchInterval) {
         clearInterval(stopwatchInterval);
