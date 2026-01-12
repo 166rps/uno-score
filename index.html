@@ -164,13 +164,23 @@
                         </div>
                     </div>
                     <div class="card">
-                        <h2>🏆 勝敗数</h2>
+                        <div class="card-header">
+                            <h2>🏆 勝敗数</h2>
+                            <select id="winLossDateSelector" class="chart-date-select">
+                                <option value="all">📅 年間全体</option>
+                            </select>
+                        </div>
                         <div class="chart-container">
                             <canvas id="winLossChart"></canvas>
                         </div>
                     </div>
                     <div class="card">
-                        <h2>📊 平均スコア</h2>
+                        <div class="card-header">
+                            <h2>📊 平均スコア</h2>
+                            <select id="barDateSelector" class="chart-date-select">
+                                <option value="all">📅 年間全体</option>
+                            </select>
+                        </div>
                         <div class="chart-container">
                             <canvas id="barChart"></canvas>
                         </div>

@@ -492,9 +492,48 @@ function updateScoreTable() {
         return;
     }
 
+    // ========== 年間合計の計算（一番上に表示用）==========
+    const yearTotals = {};
+    state.players.forEach(player => {
+        yearTotals[player] = validGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
+    });
 
+    const yearScores = Object.values(yearTotals);
+    const yearMin = Math.min(...yearScores);
+    const yearMax = Math.max(...yearScores);
 
-    // 日付ごとにグループ化
+    const yearZeroPlayers = state.players.filter(p => yearTotals[p] === 0);
+    const hasYearZeroTie = yearMin === 0 && yearZeroPlayers.length > 1;
+    const yearlyWinner = state.yearlyWinner[state.currentYear];
+
+    const yearCells = state.players.map(player => {
+        const score = yearTotals[player];
+        let className = '';
+        let content = score.toLocaleString();
+        let onclickAttr = '';
+        let styleAttr = '';
+
+        if (hasYearZeroTie && score === 0) {
+            if (yearlyWinner === player) {
+                className = 'cell-winner';
+                content = `<span style="font-size:inherit;">${score.toLocaleString()}</span><span style="font-size:0.6rem; display:block; margin-top:-2px;">★勝者</span>`;
+            } else if (yearlyWinner) {
+                className = '';
+            } else {
+                className = 'cell-winner cell-choice-needed';
+            }
+            onclickAttr = `onclick="toggleYearlyWinner('${state.currentYear}', '${player}')"`;
+            styleAttr = 'cursor: pointer;';
+        } else if (score === yearMin) {
+            className = 'cell-winner';
+        } else if (score === yearMax && yearMax !== yearMin) {
+            className = 'cell-loser';
+        }
+
+        return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
+    }).join('');
+
+    // ========== 日付別合計一覧の計算 ==========
     const gamesByDate = {};
     yearGames.forEach(game => {
         if (!gamesByDate[game.date]) {
@@ -503,10 +542,110 @@ function updateScoreTable() {
         gamesByDate[game.date].push(game);
     });
 
-    // テーブルボディ生成
+    // 日付別合計一覧（昇順：1月→12月）
+    const datesAsc = Object.keys(gamesByDate).sort((a, b) => new Date(a) - new Date(b));
+
+    let datesSummaryRows = [];
+    datesAsc.forEach(date => {
+        const dailyGames = gamesByDate[date].filter(g => !g.isOpen);
+        if (dailyGames.length === 0) return;
+
+        const dailyTotals = {};
+        state.players.forEach(player => {
+            dailyTotals[player] = dailyGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
+        });
+
+        const dailyScores = Object.values(dailyTotals);
+        const dailyMin = Math.min(...dailyScores);
+        const dailyMax = Math.max(...dailyScores);
+
+        const zeroPlayers = state.players.filter(p => dailyTotals[p] === 0);
+        const hasZeroTie = dailyMin === 0 && zeroPlayers.length > 1;
+        const dailyWinner = state.dailyWinners[date];
+
+        const dailyCells = state.players.map(player => {
+            const score = dailyTotals[player];
+            let className = '';
+            let content = score.toString();
+            let onclickAttr = '';
+            let styleAttr = '';
+
+            if (hasZeroTie && score === 0) {
+                if (dailyWinner === player) {
+                    className = 'cell-winner';
+                    content = `<span style="font-size:inherit;">${score}</span><span style="font-size:0.5rem; display:block; margin-top:-2px;">★</span>`;
+                } else if (dailyWinner) {
+                    className = '';
+                } else {
+                    className = 'cell-winner cell-choice-needed';
+                }
+                onclickAttr = `onclick="toggleDailyWinner('${date}', '${player}')"`;
+                styleAttr = 'cursor: pointer;';
+            } else if (score === dailyMin) {
+                className = 'cell-winner';
+            } else if (score === dailyMax && dailyMax !== dailyMin) {
+                className = 'cell-loser';
+            }
+
+            return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
+        }).join('');
+
+        datesSummaryRows.push(`
+            <tr class="date-summary-row">
+                <td colspan="2" style="text-align: left; padding-left: 0.5rem;">${formatDate(date)}</td>
+                ${dailyCells}
+                <td></td>
+            </tr>
+        `);
+    });
+
+    // ========== テーブルボディ生成（年間合計→日付別一覧→詳細） ==========
     let rows = [];
 
-    // 日付キーのソート
+    // 1. 年間合計（一番上）
+    rows.push(`
+        <tr class="column-header-row" style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
+            <th style="padding: 0.5rem; width: 80px;"></th>
+            <th style="padding: 0.5rem; width: 80px;"></th>
+            ${state.players.map(p => `<th style="padding: 0.5rem;">${p}</th>`).join('')}
+            <th style="padding: 0.5rem;"></th>
+        </tr>
+        <tr class="yearly-total-row">
+            <td colspan="2">🏆 年間合計</td>
+            ${yearCells}
+            <td></td>
+        </tr>
+    `);
+
+    // 2. 日付別合計一覧（昇順）
+    if (datesSummaryRows.length > 0) {
+        rows.push(`
+            <tr style="height: 10px;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
+            <tr class="section-header-row">
+                <td colspan="${state.players.length + 3}" style="background: var(--bg-secondary); font-weight: 600; padding: 0.5rem;">
+                    📊 日付別合計一覧
+                </td>
+            </tr>
+            <tr class="column-header-row" style="background: var(--bg-tertiary); font-size: 0.85rem;">
+                <th colspan="2" style="padding: 0.3rem;">日付</th>
+                ${state.players.map(p => `<th style="padding: 0.3rem;">${p}</th>`).join('')}
+                <th></th>
+            </tr>
+        `);
+        rows.push(...datesSummaryRows);
+    }
+
+    // 3. 個別ゲーム記録（既存のロジック）
+    rows.push(`
+        <tr style="height: 20px;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
+        <tr class="section-header-row">
+            <td colspan="${state.players.length + 3}" style="background: var(--bg-secondary); font-weight: 600; padding: 0.5rem;">
+                📋 ゲーム記録詳細
+            </td>
+        </tr>
+    `);
+
+    // 日付キーのソート（ユーザー選択順）
     const sortedDates = Object.keys(gamesByDate).sort((a, b) => {
         const dateA = new Date(a);
         const dateB = new Date(b);
@@ -515,9 +654,8 @@ function updateScoreTable() {
 
     sortedDates.forEach(date => {
         const dailyGames = gamesByDate[date];
-        let dailyGameNumber = 1; // 日毎にリセット
+        let dailyGameNumber = 1;
 
-        // 日付ヘッダー行（その日の代表的なゲーム種類を表示）
         const dayType = dailyGames[0]?.type || 'パねぇ！';
         const typeBadgeClass = dayType === 'パーチー' ? 'type-party' : (dayType === '普通' ? 'type-normal' : 'type-panee');
         rows.push(`
@@ -527,7 +665,6 @@ function updateScoreTable() {
                     <span class="type-badge ${typeBadgeClass}" style="margin-left: 0.5rem;">${dayType}</span>
                 </td>
             </tr>
-            <!-- 列ヘッダー行を日付ごとに挿入 -->
             <tr class="column-header-row" style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
                 <th style="padding: 0.5rem; width: 80px;">#</th>
                 <th style="padding: 0.5rem; width: 80px;">⏱️</th>
@@ -536,7 +673,6 @@ function updateScoreTable() {
             </tr>
         `);
 
-        // 各ゲーム
         dailyGames.forEach((game, idx) => {
             const scores = state.players.map(p => game.scores[p] || 0);
             const minScore = Math.min(...scores);
@@ -544,9 +680,7 @@ function updateScoreTable() {
 
             const isOpen = game.isOpen === true;
             const rowClass = isOpen ? 'open-game-row' : '';
-            const typeBadge = game.type === 'パねぇ！' ? 'paney' : (game.type === 'パーチー' ? 'party' : 'normal');
 
-            // 0点が複数人いるかチェック
             const winners = state.players.filter(p => (game.scores[p] || 0) === 0);
             const hasMultipleZeroers = winners.length > 1;
 
@@ -556,40 +690,29 @@ function updateScoreTable() {
                 let onclickAttr = '';
                 let styleAttr = '';
 
-                // 2. 勝者・敗者の色付けロジック
                 if (!isOpen) {
-                    // 0点が複数いる場合の特別処理
                     if (hasMultipleZeroers && score === 0) {
                         styleAttr = 'cursor: pointer; position: relative;';
                         onclickAttr = `onclick="toggleWinner('${game.id}', '${player}')"`;
 
-                        // 真の勝者が指定されている場合
                         if (game.trueWinner) {
                             if (game.trueWinner === player) {
                                 className = 'cell-winner';
                             } else {
-                                // 指定されているが自分じゃない場合はハイライトなし
                                 className = '';
                             }
                         } else {
-                            // 指定されていない場合は全員勝者色（クリックを促す）
                             className = 'cell-winner cell-choice-needed';
                         }
-
-
-                    }
-                    // 通常時（0点一人、または0点じゃない人）
-                    else {
+                    } else {
                         if (score === minScore) {
-                            // minScoreが0でない場合もありうるが、UNOルール的には0が勝者。
-                            // ここではminScoreの人を勝者扱いする（既存ロジック）
                             className = 'cell-winner';
+                        } else if (score === maxScore && maxScore !== minScore) {
+                            className = 'cell-loser';
                         }
-                        else if (score === maxScore && maxScore !== minScore) className = 'cell-loser';
                     }
                 }
 
-                // cell-choice-neededの場合、ツールチップ的なものを出したいが、シンプルに
                 let content = `<span style="font-size:inherit;">${score}</span>`;
                 if (className.includes('cell-choice-needed')) {
                     content += '<span style="font-size:0.5rem; display:block; opacity:0.7; margin-top:-3px;">👈選ぶ</span>';
@@ -601,7 +724,6 @@ function updateScoreTable() {
                 return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
             }).join('');
 
-            // 経過時間の表示
             const durationDisplay = game.duration
                 ? `${game.duration.minutes}:${game.duration.seconds.toString().padStart(2, '0')}`
                 : '-';
@@ -620,8 +742,6 @@ function updateScoreTable() {
 
         // 日計（オープンゲームを除く）
         const validDailyGames = dailyGames.filter(g => !g.isOpen);
-
-        // 有効なゲームがある場合のみ日計を表示
         if (validDailyGames.length > 0) {
             const dailyTotals = {};
             state.players.forEach(player => {
@@ -632,7 +752,6 @@ function updateScoreTable() {
             const dailyMin = Math.min(...dailyScores);
             const dailyMax = Math.max(...dailyScores);
 
-            // 0点で同点のプレイヤーをチェック
             const zeroPlayers = state.players.filter(p => dailyTotals[p] === 0);
             const hasZeroTie = dailyMin === 0 && zeroPlayers.length > 1;
             const dailyWinner = state.dailyWinners[date];
@@ -645,15 +764,12 @@ function updateScoreTable() {
                 let styleAttr = '';
 
                 if (hasZeroTie && score === 0) {
-                    // 0点同点の場合、勝者選択可能に
                     if (dailyWinner === player) {
                         className = 'cell-winner';
                         content = `<span style="font-size:inherit;">${score}</span><span style="font-size:0.6rem; display:block; margin-top:-2px;">★勝者</span>`;
                     } else if (dailyWinner) {
-                        // 別の人が勝者に選ばれている場合
                         className = '';
                     } else {
-                        // 誰も選ばれていない場合
                         className = 'cell-winner cell-choice-needed';
                     }
                     onclickAttr = `onclick="toggleDailyWinner('${date}', '${player}')"`;
@@ -674,72 +790,11 @@ function updateScoreTable() {
                     <td></td>
                 </tr>
             `);
-        } else if (dailyGames.some(g => g.isOpen)) {
-            rows.push(`
-                <tr class="daily-total-row" style="background-color: transparent;">
-                    <td colspan="${state.players.length + 3}" style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
-                        ※オープンゲームのため合計計算対象外
-                    </td>
-                </tr>
-            `);
         }
     });
 
     body.innerHTML = rows.join('');
-
-    // 年間合計（オープンゲームを除く）
-    const yearTotals = {};
-    state.players.forEach(player => {
-        yearTotals[player] = validGames.reduce((sum, game) => sum + (game.scores[player] || 0), 0);
-    });
-
-    const yearScores = Object.values(yearTotals);
-    const yearMin = Math.min(...yearScores);
-    const yearMax = Math.max(...yearScores);
-
-    // 0点で同点のプレイヤーをチェック
-    const yearZeroPlayers = state.players.filter(p => yearTotals[p] === 0);
-    const hasYearZeroTie = yearMin === 0 && yearZeroPlayers.length > 1;
-    const yearlyWinner = state.yearlyWinner[state.currentYear];
-
-    const yearCells = state.players.map(player => {
-        const score = yearTotals[player];
-        let className = '';
-        let content = score.toLocaleString();
-        let onclickAttr = '';
-        let styleAttr = '';
-
-        if (hasYearZeroTie && score === 0) {
-            // 0点同点の場合、勝者選択可能に
-            if (yearlyWinner === player) {
-                className = 'cell-winner';
-                content = `<span style="font-size:inherit;">${score.toLocaleString()}</span><span style="font-size:0.6rem; display:block; margin-top:-2px;">★勝者</span>`;
-            } else if (yearlyWinner) {
-                // 別の人が勝者に選ばれている場合
-                className = '';
-            } else {
-                // 誰も選ばれていない場合
-                className = 'cell-winner cell-choice-needed';
-            }
-            onclickAttr = `onclick="toggleYearlyWinner('${state.currentYear}', '${player}')"`;
-            styleAttr = 'cursor: pointer;';
-        } else if (score === yearMin) {
-            className = 'cell-winner';
-        } else if (score === yearMax && yearMax !== yearMin) {
-            className = 'cell-loser';
-        }
-
-        return `<td class="${className}" style="${styleAttr}" ${onclickAttr}>${content}</td>`;
-    }).join('');
-
-    foot.innerHTML = `
-        <tr style="height: 20px; border: none;"><td colspan="${state.players.length + 3}" style="border: none;"></td></tr>
-        <tr class="yearly-total-row">
-            <td colspan="2">🏆 年間合計</td>
-            ${yearCells}
-            <td></td>
-        </tr>
-    `;
+    foot.innerHTML = ''; // フッターは不要に
 }
 
 // ゲーム削除
@@ -1101,9 +1156,56 @@ function updateLineChart() {
 
 function updateWinLossChart() {
     const ctx = document.getElementById('winLossChart');
+    const selector = document.getElementById('winLossDateSelector');
     if (!ctx) return;
 
-    const yearGames = getGamesForYear(state.currentYear, true); // オープンゲーム除外
+    // グラフ用は常に古い順（昇順）でソート
+    let allYearGames = state.games.filter(game => {
+        const gameYear = new Date(game.date).getFullYear();
+        if (gameYear !== state.currentYear) return false;
+        if (game.isOpen) return false; // オープンゲーム除外
+        return true;
+    });
+    allYearGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 日付のリストを取得
+    const dates = [...new Set(allYearGames.map(g => g.date))].sort();
+
+    // セレクタを更新
+    if (selector) {
+        const currentValue = selector.value;
+        selector.innerHTML = '<option value="all">📅 年間全体</option>';
+        dates.forEach(date => {
+            const d = new Date(date);
+            const label = `${d.getMonth() + 1}/${d.getDate()}`;
+            selector.innerHTML += `<option value="${date}">${label}</option>`;
+        });
+
+        // 直近の日付をデフォルトに（初回のみ）
+        if (!state.winLossSelectedDate && dates.length > 0) {
+            state.winLossSelectedDate = dates[dates.length - 1]; // 直近の日付
+        }
+
+        // 選択値を復元
+        if (state.winLossSelectedDate && dates.includes(state.winLossSelectedDate)) {
+            selector.value = state.winLossSelectedDate;
+        } else if (currentValue === 'all' || !state.winLossSelectedDate) {
+            selector.value = state.winLossSelectedDate || (dates.length > 0 ? dates[dates.length - 1] : 'all');
+            state.winLossSelectedDate = selector.value;
+        }
+
+        // イベントリスナー（重複防止）
+        selector.onchange = () => {
+            state.winLossSelectedDate = selector.value;
+            updateWinLossChart();
+        };
+    }
+
+    // 選択日付でフィルタ
+    let yearGames = allYearGames;
+    if (state.winLossSelectedDate && state.winLossSelectedDate !== 'all') {
+        yearGames = allYearGames.filter(g => g.date === state.winLossSelectedDate);
+    }
 
     if (state.charts.winLoss) {
         state.charts.winLoss.destroy();
@@ -1188,9 +1290,56 @@ function updateWinLossChart() {
 
 function updateBarChart() {
     const ctx = document.getElementById('barChart');
+    const selector = document.getElementById('barDateSelector');
     if (!ctx) return;
 
-    const yearGames = getGamesForYear(state.currentYear, true); // オープンゲーム除外
+    // グラフ用は常に古い順（昇順）でソート
+    let allYearGames = state.games.filter(game => {
+        const gameYear = new Date(game.date).getFullYear();
+        if (gameYear !== state.currentYear) return false;
+        if (game.isOpen) return false; // オープンゲーム除外
+        return true;
+    });
+    allYearGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 日付のリストを取得
+    const dates = [...new Set(allYearGames.map(g => g.date))].sort();
+
+    // セレクタを更新
+    if (selector) {
+        const currentValue = selector.value;
+        selector.innerHTML = '<option value="all">📅 年間全体</option>';
+        dates.forEach(date => {
+            const d = new Date(date);
+            const label = `${d.getMonth() + 1}/${d.getDate()}`;
+            selector.innerHTML += `<option value="${date}">${label}</option>`;
+        });
+
+        // 直近の日付をデフォルトに（初回のみ）
+        if (!state.barSelectedDate && dates.length > 0) {
+            state.barSelectedDate = dates[dates.length - 1]; // 直近の日付
+        }
+
+        // 選択値を復元
+        if (state.barSelectedDate && dates.includes(state.barSelectedDate)) {
+            selector.value = state.barSelectedDate;
+        } else if (currentValue === 'all' || !state.barSelectedDate) {
+            selector.value = state.barSelectedDate || (dates.length > 0 ? dates[dates.length - 1] : 'all');
+            state.barSelectedDate = selector.value;
+        }
+
+        // イベントリスナー（重複防止）
+        selector.onchange = () => {
+            state.barSelectedDate = selector.value;
+            updateBarChart();
+        };
+    }
+
+    // 選択日付でフィルタ
+    let yearGames = allYearGames;
+    if (state.barSelectedDate && state.barSelectedDate !== 'all') {
+        yearGames = allYearGames.filter(g => g.date === state.barSelectedDate);
+    }
 
     if (state.charts.bar) {
         state.charts.bar.destroy();

@@ -556,7 +556,7 @@ body {
 }
 
 .recent-games-table td {
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     font-weight: 800;
 }
 
@@ -1597,4 +1597,19 @@ body {
 .chart-date-select:focus {
     outline: none;
     border-color: var(--accent-cyan);
+}
+
+/* 日付別合計一覧 */
+.date-summary-row td {
+    font-size: 1.7rem !important;
+    padding: 0.5rem;
+}
+
+.section-header-row td {
+    font-size: 1rem;
+}
+
+/* 年間合計（テーブル上部） */
+.yearly-total-row td {
+    font-size: 1.7rem !important;
 }
